@@ -3,7 +3,8 @@ import yaml
 import json
 import requests
 from operator import itemgetter
-from .prompts import initial_messages
+from pydantic import BaseModel
+from .prompts import initial_messages, make_verification_message
 
 def load_config(filepath):
     with open(filepath, "r") as file:
@@ -38,7 +39,7 @@ def list_to_map(input_list):
     return {key: {"type": item} for key, item in zip(keys, input_list)}
 
 def create_completion(client, model, **kwargs):
-    return client.chat.completions.create(
+    return client.beta.chat.completions.parse(
         model=model,
         **kwargs
     )
@@ -52,10 +53,11 @@ def handle_tool_call(postfn, attempt_id, call):
     args_norm = normalize_args(arguments)
 
     fnoutput = postfn("test-function", {"attempt-id": attempt_id,
-                                        "args": args_norm})
+                                        "args": args_norm})["output"]
 
-    print(args_norm)
-    print(fnoutput)
+    print("HANDLING TOOL CALL")
+    print("args_norm: ", args_norm)
+    print("fnoutput", fnoutput)
 
     function_call_result_message = {
         "role": "tool",
@@ -65,48 +67,92 @@ def handle_tool_call(postfn, attempt_id, call):
 
     return function_call_result_message
 
+def make_schema(output_type):
+    mapping = {
+        "string": str,
+        "integer": int,
+        "boolean": bool,
+        "float": float
+    }
+
+    class Prediction(BaseModel):
+        """Prediction of the function output."""
+
+        thoughts: str
+        expected_output: mapping.get(output_type, None)
+
+    return Prediction
+
 def interrogate_and_verify(postfn, completionfn, attempt_id, arg_spec):
     tools = [
         {
             "type": "function",
             "function": {
                 "name": "mystery_function",
+                "strict": True,
                 "parameters": {
                     "type": "object",
                     "properties": list_to_map(arg_spec),
-                    "required": list(list_to_map(arg_spec).keys())
+                    "required": list(list_to_map(arg_spec).keys()),
+                    "additionalProperties": False
                 },
             },
         }
     ]
 
     # call the LLM repeatedly until it stops calling it's tool
-    messages=initial_messages
+    messages = initial_messages.copy()
     while True:
-        completion = completionfn(
-            messages=messages,
-            tools=tools
-        )
+        completion = completionfn(messages=messages, tools=tools)
 
         response = completion.choices[0]
         message = response.message.content
         tool_calls = response.message.tool_calls
 
-        messages.append({"role": "assistant",
-                         "content": message,
-                         "tool_calls": tool_calls})
-
+        print("INTERROGATION MESSAGE")
         print(message)
         print()
 
-        # if it didn't call the tool we can move on
-        if not tool_calls:
+        if tool_calls:
+            messages.append({"role": "assistant",
+                             "content": message,
+                             "tool_calls": tool_calls})
+
+            for call in tool_calls:
+                messages.append(handle_tool_call(postfn, attempt_id, call))
+
+        # if it didn't call the tool we can move on to verifications
+        else:
+            messages.append({"role": "assistant",
+                             "content": message})
+
             break
 
-        for call in tool_calls:
-            messages.append(handle_tool_call(postfn, attempt_id, call))
-
     # now it's time for verifications
+    while (v_data := postfn("next-verification", {"attempt-id": attempt_id})):
+        verification = v_data["next-verification"]
+        output_type = v_data["output-type"]
+
+        vmessages = messages + [make_verification_message(verification)]
+
+        completion = completionfn(messages=vmessages,
+                                  response_format=make_schema(output_type))
+
+        response = completion.choices[0]
+
+        thoughts, expected_output = destructure(json.loads(response.message.content), "thoughts", "expected_output")
+
+        print("VERIFICATIONS")
+        print("verification: ", verification)
+        print("thoughts: ", thoughts)
+        print("expected_output", expected_output)
+
+        vstatus = postfn("attempt-verification", {"attempt-id": attempt_id,
+                                                  "prediction": expected_output})["status"]
+
+        if vstatus == "done":
+            break
+
 
 def main():
     config_non_sensitive = load_config("resources/config.yaml")
@@ -122,4 +168,4 @@ def main():
     for attempt in attempts:
         interrogate_and_verify(postfn, completionfn, attempt["attempt-id"], attempt["fn-args"])
 
-        
+    print(postfn("complete-run", {}))
