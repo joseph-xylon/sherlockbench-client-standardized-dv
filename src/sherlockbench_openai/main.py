@@ -1,7 +1,8 @@
-from openai import OpenAI
+from openai import OpenAI, LengthFinishReasonError
 import yaml
 import json
 import requests
+from requests import HTTPError
 from operator import itemgetter
 from pydantic import BaseModel
 from .prompts import initial_messages, make_verification_message
@@ -29,8 +30,15 @@ def get(url, params=None):
 def post(base_url, run_id, path, data):
     data["run-id"] = run_id
 
-    response = requests.post(base_url + path, json=data)
-    response.raise_for_status()
+    try:
+        response = requests.post(base_url + path, json=data)
+        response.raise_for_status()
+    except HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err}")
+
+        if response.json()["error"] == "your arguments don't comply with the schema":
+            return {"output": "your arguments don't comply with the schema"}
+        
     return response.json()
 
 def list_to_map(input_list):
@@ -79,7 +87,7 @@ def make_schema(output_type):
         """Prediction of the function output."""
 
         thoughts: str
-        expected_output: mapping.get(output_type, None)
+        expected_output: mapping.get(output_type)
 
     return Prediction
 
@@ -135,8 +143,15 @@ def interrogate_and_verify(postfn, completionfn, attempt_id, arg_spec):
 
         vmessages = messages + [make_verification_message(verification)]
 
-        completion = completionfn(messages=vmessages,
-                                  response_format=make_schema(output_type))
+        try:
+            completion = completionfn(messages=vmessages,
+                                      response_format=make_schema(output_type))
+        except LengthFinishReasonError as e:
+            print("Caught a LengthFinishReasonError!")
+            print("Completion:", e.completion)
+
+            # well it failed so we break
+            break
 
         response = completion.choices[0]
 

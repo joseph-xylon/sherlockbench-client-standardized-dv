@@ -24,4 +24,4 @@ f"""To test your theory, please tell me what is the expected output from the fun
 You no-longer have access to the tool because I am testing if you have got it right.
 
 Please respond in JSON with two keys: \"thoughts\" and \"expected_output\".
-The expected_output key will be used automatically to check your results so only include the output you expect from the function. And use the thoughts key to explain your workings."""}
+expected_output should contain the output you expect from the function."""}
