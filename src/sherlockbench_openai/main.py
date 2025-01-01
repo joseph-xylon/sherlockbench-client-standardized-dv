@@ -165,7 +165,7 @@ def interrogate_and_verify(postfn, completionfn, attempt_id, arg_spec):
         vstatus = postfn("attempt-verification", {"attempt-id": attempt_id,
                                                   "prediction": expected_output})["status"]
 
-        if vstatus == "done":
+        if vstatus in ("done", "wrong"):
             break
 
 
