@@ -3,14 +3,12 @@ import json
 import requests
 from requests import HTTPError
 from operator import itemgetter
-from pydantic import BaseModel
 from .prompts import initial_messages, make_verification_message
-from sherlockbench_client import load_config, destructure, get, post
+from .investigate import investigate
+from .verify import verify
+from sherlockbench_client import load_config, destructure, get, post, AccumulatingPrinter
 
-def list_to_map(input_list):
-    "openai doesn't like arrays much so just assign arbritray keys"
-    keys = [chr(97 + i) for i in range(len(input_list))]  # Generate keys: 'a', 'b', 'c', etc.
-    return {key: {"type": item} for key, item in zip(keys, input_list)}
+msg_limit = 50
 
 def create_completion(client, model, **kwargs):
     return client.beta.chat.completions.parse(
@@ -18,122 +16,18 @@ def create_completion(client, model, **kwargs):
         **kwargs
     )
 
-def normalize_args(input_dict):
-    """Converts a dict into a list of values, sorted by the alphabetical order of the keys."""
-    return [input_dict[key] for key in sorted(input_dict.keys())]
+def interrogate_and_verify(postfn, completionfn, config, attempt_id, arg_spec):
+    # setup the printer
+    printer = AccumulatingPrinter()
 
-def handle_tool_call(postfn, attempt_id, call):
-    arguments = json.loads(call.function.arguments)
-    args_norm = normalize_args(arguments)
-
-    fnoutput = postfn("test-function", {"attempt-id": attempt_id,
-                                        "args": args_norm})["output"]
-
-    print("HANDLING TOOL CALL")
-    print("args_norm: ", args_norm)
-    print("fnoutput", fnoutput)
-
-    function_call_result_message = {
-        "role": "tool",
-        "content": json.dumps(fnoutput),
-        "tool_call_id": call.id
-    }
-
-    return function_call_result_message
-
-def make_schema(output_type):
-    mapping = {
-        "string": str,
-        "integer": int,
-        "boolean": bool,
-        "float": float
-    }
-
-    class Prediction(BaseModel):
-        """Prediction of the function output."""
-
-        thoughts: str
-        expected_output: mapping.get(output_type)
-
-    return Prediction
-
-def interrogate_and_verify(postfn, completionfn, attempt_id, arg_spec):
-    tools = [
-        {
-            "type": "function",
-            "function": {
-                "name": "mystery_function",
-                "strict": True,
-                "parameters": {
-                    "type": "object",
-                    "properties": list_to_map(arg_spec),
-                    "required": list(list_to_map(arg_spec).keys()),
-                    "additionalProperties": False
-                },
-            },
-        }
-    ]
+    printer.print("\n### SYSTEM: interrogating function with args", arg_spec)
 
     # call the LLM repeatedly until it stops calling it's tool
     messages = initial_messages.copy()
-    while True:
-        completion = completionfn(messages=messages, tools=tools)
+    messages, tool_call_count = investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec)
 
-        response = completion.choices[0]
-        message = response.message.content
-        tool_calls = response.message.tool_calls
-
-        print("INTERROGATION MESSAGE")
-        print(message)
-        print()
-
-        if tool_calls:
-            messages.append({"role": "assistant",
-                             "content": message,
-                             "tool_calls": tool_calls})
-
-            for call in tool_calls:
-                messages.append(handle_tool_call(postfn, attempt_id, call))
-
-        # if it didn't call the tool we can move on to verifications
-        else:
-            messages.append({"role": "assistant",
-                             "content": message})
-
-            break
-
-    # now it's time for verifications
-    while (v_data := postfn("next-verification", {"attempt-id": attempt_id})):
-        verification = v_data["next-verification"]
-        output_type = v_data["output-type"]
-
-        vmessages = messages + [make_verification_message(verification)]
-
-        try:
-            completion = completionfn(messages=vmessages,
-                                      response_format=make_schema(output_type))
-        except LengthFinishReasonError as e:
-            print("Caught a LengthFinishReasonError!")
-            print("Completion:", e.completion)
-
-            # well it failed so we break
-            break
-
-        response = completion.choices[0]
-
-        thoughts, expected_output = destructure(json.loads(response.message.content), "thoughts", "expected_output")
-
-        print("VERIFICATIONS")
-        print("verification: ", verification)
-        print("thoughts: ", thoughts)
-        print("expected_output", expected_output)
-
-        vstatus = postfn("attempt-verification", {"attempt-id": attempt_id,
-                                                  "prediction": expected_output})["status"]
-
-        if vstatus in ("done", "wrong"):
-            break
-
+    printer.print("\n### SYSTEM: verifying function with args", arg_spec)
+    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id)
 
 def main():
     config_non_sensitive = load_config("resources/config.yaml")
@@ -147,6 +41,6 @@ def main():
     completionfn = lambda **kwargs: create_completion(client, config['model'], **kwargs)
 
     for attempt in attempts:
-        interrogate_and_verify(postfn, completionfn, attempt["attempt-id"], attempt["fn-args"])
+        interrogate_and_verify(postfn, completionfn, config, attempt["attempt-id"], attempt["fn-args"])
 
     print(postfn("complete-run", {}))
