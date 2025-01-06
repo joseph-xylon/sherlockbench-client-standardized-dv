@@ -42,7 +42,8 @@ def main():
     db_conn = psycopg2.connect(config["postgres-url"])
     cursor = db_conn.cursor()
 
-    run_id, benchmark_version, attempts = destructure(get(config['base-url'] + "start-run"), "run-id", "benchmark-version", "attempts")
+    subset = config.get("subset")
+    run_id, benchmark_version, attempts = destructure(get(config['base-url'] + (f"start-run?subset={subset}" if subset else "start-run")), "run-id", "benchmark-version", "attempts")
 
     # we create the run table now even though we don't have all the data we need yet
     start_time = datetime.now()
