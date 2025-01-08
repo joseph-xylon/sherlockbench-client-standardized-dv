@@ -66,9 +66,19 @@ def main():
     for attempt in attempts:
         interrogate_and_verify(postfn, completionfn, config, attempt["attempt-id"], attempt["fn-args"])
 
-    print(postfn("complete-run", {}))
+    run_time, score, percent, problem_names = destructure(postfn("complete-run", {}), "run-time", "score", "percent", "problem-names")
+
+    print("\n### SYSTEM: run complete for model `" + config["model"] + "`.")
+    print("Final score:", score["numerator"], "/", score["denominator"])
+    print("Percent:", percent)
+    print("Wrong answers:")
+    # TODO left off here.
+
 
     # Why do database libraries require so much boilerplate?
     db_conn.commit()
     cursor.close()
     db_conn.close()
+
+if __name__ == "__main__":
+    main()
