@@ -57,6 +57,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
         }
     ]
 
+    # call the LLM repeatedly until it stops calling it's tool
     for count in range(0, msg_limit):
         completion = completionfn(messages=messages, tools=tools)
 

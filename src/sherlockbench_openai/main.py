@@ -3,15 +3,15 @@ import json
 import requests
 from requests import HTTPError
 from operator import itemgetter
-from .prompts import initial_messages, make_verification_message
+from .prompts import initial_messages
 from .investigate import investigate
 from .verify import verify
+from . import queries as q
 from sherlockbench_client import load_config, destructure, get, post, AccumulatingPrinter
 from datetime import datetime
 
 # db
 import psycopg2
-from pypika import Query, Table
 
 msg_limit = 50
 
@@ -21,13 +21,12 @@ def create_completion(client, model, **kwargs):
         **kwargs
     )
 
-def interrogate_and_verify(postfn, completionfn, config, attempt_id, arg_spec):
+def investigate_and_verify(postfn, completionfn, config, attempt_id, arg_spec):
     # setup the printer
     printer = AccumulatingPrinter()
 
     printer.print("\n### SYSTEM: interrogating function with args", arg_spec)
 
-    # call the LLM repeatedly until it stops calling it's tool
     messages = initial_messages.copy()
     messages, tool_call_count = investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec)
 
@@ -46,17 +45,7 @@ def main():
     run_id, benchmark_version, attempts = destructure(get(config['base-url'] + (f"start-run?subset={subset}" if subset else "start-run")), "run-id", "benchmark-version", "attempts")
 
     # we create the run table now even though we don't have all the data we need yet
-    start_time = datetime.now()
-    run_data = {"id": run_id,
-                "model_identifier": config["model"],
-                "benchmark_version": benchmark_version.split('.', 1)[0],
-                "config": json.dumps(config_non_sensitive),
-                "datetime_start": start_time.strftime('%Y-%m-%d %H:%M:%S')
-                }
-
-    runs = Table("runs")
-    insert_query = Query.into(runs).columns(*run_data.keys()).insert(*run_data.values())
-    cursor.execute(str(insert_query))
+    q.create_run(cursor, config_non_sensitive, run_id, benchmark_version)
 
     client = OpenAI(api_key=config['api-key'])
 
@@ -64,7 +53,7 @@ def main():
     completionfn = lambda **kwargs: create_completion(client, config['model'], **kwargs)
 
     for attempt in attempts:
-        interrogate_and_verify(postfn, completionfn, config, attempt["attempt-id"], attempt["fn-args"])
+        investigate_and_verify(postfn, completionfn, config, attempt["attempt-id"], attempt["fn-args"])
 
     run_time, score, percent, problem_names = destructure(postfn("complete-run", {}), "run-time", "score", "percent", "problem-names")
 
@@ -72,8 +61,11 @@ def main():
     print("Final score:", score["numerator"], "/", score["denominator"])
     print("Percent:", percent)
     print("Wrong answers:")
-    # TODO left off here.
-
+    
+    # we have the problem names now so we can add that into the db
+    # problem_names is a list of dicts containing "id" and "function_name"
+    #q.add_problem_names(cursor, run_id, problem_names)
+    
 
     # Why do database libraries require so much boilerplate?
     db_conn.commit()
