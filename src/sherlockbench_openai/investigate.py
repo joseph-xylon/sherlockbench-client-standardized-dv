@@ -58,14 +58,13 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
     ]
 
     # call the LLM repeatedly until it stops calling it's tool
+    tool_call_counter = 0
     for count in range(0, msg_limit):
         completion = completionfn(messages=messages, tools=tools)
 
         response = completion.choices[0]
         message = response.message.content
         tool_calls = response.message.tool_calls
-
-        tool_call_counter = 0
 
         printer.print("\n--- LLM ---")
         printer.indented_print(message)

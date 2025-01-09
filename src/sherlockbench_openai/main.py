@@ -7,7 +7,7 @@ from .prompts import initial_messages
 from .investigate import investigate
 from .verify import verify
 from . import queries as q
-from sherlockbench_client import load_config, destructure, get, post, AccumulatingPrinter
+from sherlockbench_client import load_config, destructure, get, post, AccumulatingPrinter, LLMRateLimiter
 from datetime import datetime
 
 # db
@@ -21,7 +21,10 @@ def create_completion(client, model, **kwargs):
         **kwargs
     )
 
-def investigate_and_verify(postfn, completionfn, config, attempt_id, arg_spec):
+def investigate_and_verify(postfn, completionfn, config, attempt_id, arg_spec, run_id, cursor):
+    start_time = datetime.now()
+    start_api_calls = completionfn.total_call_count
+
     # setup the printer
     printer = AccumulatingPrinter()
 
@@ -32,6 +35,11 @@ def investigate_and_verify(postfn, completionfn, config, attempt_id, arg_spec):
 
     printer.print("\n### SYSTEM: verifying function with args", arg_spec)
     verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id)
+
+    time_taken = (datetime.now() - start_time).total_seconds()
+    q.add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count, printer, completionfn, start_api_calls, attempt_id)
+
+    return verification_result
 
 def main():
     config_non_sensitive = load_config("resources/config.yaml")
@@ -52,8 +60,12 @@ def main():
     postfn = lambda *args: post(config["base-url"], run_id, *args)
     completionfn = lambda **kwargs: create_completion(client, config['model'], **kwargs)
 
+    completionfn = LLMRateLimiter(rate_limit_seconds=config['rate-limit'],
+                                  llmfn=completionfn,
+                                  backoff_exceptions=())
+
     for attempt in attempts:
-        investigate_and_verify(postfn, completionfn, config, attempt["attempt-id"], attempt["fn-args"])
+        investigate_and_verify(postfn, completionfn, config, attempt["attempt-id"], attempt["fn-args"], run_id, cursor)
 
     run_time, score, percent, problem_names = destructure(postfn("complete-run", {}), "run-time", "score", "percent", "problem-names")
 
