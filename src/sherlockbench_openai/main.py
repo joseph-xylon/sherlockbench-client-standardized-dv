@@ -49,6 +49,8 @@ def main():
     db_conn = psycopg2.connect(config["postgres-url"])
     cursor = db_conn.cursor()
 
+    start_time = datetime.now()
+
     subset = config.get("subset")
     run_id, benchmark_version, attempts = destructure(get(config['base-url'] + (f"start-run?subset={subset}" if subset else "start-run")), "run-id", "benchmark-version", "attempts")
 
@@ -69,16 +71,18 @@ def main():
 
     run_time, score, percent, problem_names = destructure(postfn("complete-run", {}), "run-time", "score", "percent", "problem-names")
 
+    # we have the problem names now so we can add that into the db
+    q.add_problem_names(cursor, problem_names)
+
+    # save the results to the db
+    q.save_run_result(cursor, run_id, start_time, score, percent, completionfn)
+
+    # print the results
     print("\n### SYSTEM: run complete for model `" + config["model"] + "`.")
     print("Final score:", score["numerator"], "/", score["denominator"])
     print("Percent:", percent)
     print("Wrong answers:")
     
-    # we have the problem names now so we can add that into the db
-    # problem_names is a list of dicts containing "id" and "function_name"
-    #q.add_problem_names(cursor, run_id, problem_names)
-    
-
     # Why do database libraries require so much boilerplate?
     db_conn.commit()
     cursor.close()
