@@ -7,7 +7,7 @@ from .prompts import initial_messages
 from .investigate import investigate
 from .verify import verify
 from . import queries as q
-from sherlockbench_client import load_config, destructure, get, post, AccumulatingPrinter, LLMRateLimiter
+from sherlockbench_client import load_config, destructure, post, AccumulatingPrinter, LLMRateLimiter
 from datetime import datetime
 
 # db
@@ -52,7 +52,15 @@ def main():
     start_time = datetime.now()
 
     subset = config.get("subset")
-    run_id, benchmark_version, attempts = destructure(get(config['base-url'] + (f"start-run?subset={subset}" if subset else "start-run")), "run-id", "benchmark-version", "attempts")
+    post_data = {"client-id": f"openai/{config['model']}"}
+    if subset:
+        post_data["subset"] = subset
+
+    run_id, benchmark_version, attempts = destructure(post(config['base-url'],
+                                                           None,
+                                                           "start-run",
+                                                           post_data),
+                                                      "run-id", "benchmark-version", "attempts")
 
     # we create the run table now even though we don't have all the data we need yet
     q.create_run(cursor, config_non_sensitive, run_id, benchmark_version)
@@ -81,7 +89,6 @@ def main():
     print("\n### SYSTEM: run complete for model `" + config["model"] + "`.")
     print("Final score:", score["numerator"], "/", score["denominator"])
     print("Percent:", percent)
-    print("Wrong answers:")
     
     # Why do database libraries require so much boilerplate?
     db_conn.commit()

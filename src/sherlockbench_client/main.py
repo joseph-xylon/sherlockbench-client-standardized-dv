@@ -23,11 +23,6 @@ def destructure(dictionary, *keys):
     """it boggles my mind that Python doesn't have destructuring"""
     return (dictionary[key] for key in keys)
 
-def get(url, params=None):
-    response = requests.get(url, params=params)
-    response.raise_for_status()  # Raise an error for HTTP issues
-    return response.json()
-
 def post(base_url, run_id, path, data):
     data["run-id"] = run_id
 
