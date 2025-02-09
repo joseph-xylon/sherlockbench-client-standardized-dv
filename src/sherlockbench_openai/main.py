@@ -1,6 +1,7 @@
 from openai import OpenAI, LengthFinishReasonError
 import json
 import requests
+import argparse
 from requests import HTTPError
 from operator import itemgetter
 from .prompts import initial_messages
@@ -42,6 +43,11 @@ def investigate_and_verify(postfn, completionfn, config, attempt_id, arg_spec, r
     return verification_result
 
 def main():
+    parser = argparse.ArgumentParser(description="Run SherlockBench with an optional argument.")
+    parser.add_argument("arg", nargs="?", default=None, help="The id of an existing run")
+    
+    args = parser.parse_args()
+    
     config_non_sensitive = load_config("resources/config.yaml")
     config = config_non_sensitive | load_config("resources/credentials.yaml")
     
@@ -53,14 +59,20 @@ def main():
 
     subset = config.get("subset")
     post_data = {"client-id": f"openai/{config['model']}"}
+
     if subset:
         post_data["subset"] = subset
 
+    if args.arg:
+        post_data["existing-run-id"] = args.arg
+    
     run_id, benchmark_version, attempts = destructure(post(config['base-url'],
                                                            None,
                                                            "start-run",
                                                            post_data),
                                                       "run-id", "benchmark-version", "attempts")
+
+    print("Starting benchmark with run-id: ", run_id)
 
     # we create the run table now even though we don't have all the data we need yet
     q.create_run(cursor, config_non_sensitive, run_id, benchmark_version)
