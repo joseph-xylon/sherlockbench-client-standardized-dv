@@ -2,10 +2,10 @@ from pypika import Query, Table
 from datetime import datetime
 import json
 
-def create_run(cursor, config_non_sensitive, run_id, benchmark_version):
+def create_run(cursor, config_non_sensitive, model_identifier, run_id, benchmark_version):
     start_time = datetime.now()
     run_data = {"id": run_id,
-                "model_identifier": config_non_sensitive["model"],
+                "model_identifier": model_identifier,
                 "benchmark_version": benchmark_version.split('.', 1)[0],
                 "config": json.dumps(config_non_sensitive),
                 "datetime_start": start_time.strftime('%Y-%m-%d %H:%M:%S')
