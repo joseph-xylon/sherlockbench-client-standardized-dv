@@ -1,13 +1,10 @@
 from openai import OpenAI, LengthFinishReasonError
-import json
-import requests
-import argparse
 from requests import HTTPError
 from operator import itemgetter
 from .prompts import initial_messages
 from .investigate import investigate
 from .verify import verify
-from sherlockbench_client import load_config, destructure, post, AccumulatingPrinter, LLMRateLimiter, q
+from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, start_run
 from datetime import datetime
 
 # db
@@ -42,47 +39,16 @@ def investigate_and_verify(postfn, completionfn, config, attempt_id, arg_spec, r
     return verification_result
 
 def main():
-    parser = argparse.ArgumentParser(description="Run SherlockBench with an optional argument.")
-    parser.add_argument("arg", nargs="?", default=None, help="The id of an existing run")
-
-    args = parser.parse_args()
-
-    config_non_sensitive = load_config("resources/config.yaml")
-    config = config_non_sensitive | load_config("resources/credentials.yaml")
-
-    # connect to postgresql
-    db_conn = psycopg2.connect(config["postgres-url"])
-    cursor = db_conn.cursor()
+    config, db_conn, cursor, run_id, attempts = start_run("openai")
 
     start_time = datetime.now()
-
-    subset = config.get("subset")
-    post_data = {"client-id": f"openai/{config['openai']['model']}"}
-
-    if subset:
-        post_data["subset"] = subset
-
-    if args.arg:
-        post_data["existing-run-id"] = args.arg
-    
-    run_id, benchmark_version, attempts = destructure(post(config['base-url'],
-                                                           None,
-                                                           "start-run",
-                                                           post_data),
-                                                      "run-id", "benchmark-version", "attempts")
-
-    print("Starting benchmark with run-id: ", run_id)
-
-    # we create the run table now even though we don't have all the data we need yet
-    q.create_run(cursor, config_non_sensitive, config_non_sensitive["openai"]["model"],
-                 run_id, benchmark_version)
 
     client = OpenAI(api_key=config['api-keys']['openai'])
 
     postfn = lambda *args: post(config["base-url"], run_id, *args)
-    completionfn = lambda **kwargs: create_completion(client, config['openai']['model'], **kwargs)
+    completionfn = lambda **kwargs: create_completion(client, config['model'], **kwargs)
 
-    completionfn = LLMRateLimiter(rate_limit_seconds=config['openai']['rate-limit'],
+    completionfn = LLMRateLimiter(rate_limit_seconds=config['rate-limit'],
                                   llmfn=completionfn,
                                   backoff_exceptions=())
 
@@ -98,7 +64,7 @@ def main():
     q.save_run_result(cursor, run_id, start_time, score, percent, completionfn)
 
     # print the results
-    print("\n### SYSTEM: run complete for model `" + config['openai']["model"] + "`.")
+    print("\n### SYSTEM: run complete for model `" + config["model"] + "`.")
     print("Final score:", score["numerator"], "/", score["denominator"])
     print("Percent:", percent)
     
