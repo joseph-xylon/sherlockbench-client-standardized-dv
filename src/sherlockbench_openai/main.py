@@ -1,18 +1,17 @@
 from openai import OpenAI, LengthFinishReasonError
-from requests import HTTPError
-from operator import itemgetter
+from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, start_run
+
 from .prompts import initial_messages
 from .investigate import investigate
 from .verify import verify
-from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, start_run
-from datetime import datetime
 
-# db
+from datetime import datetime
 import psycopg2
 
 msg_limit = 50
 
 def create_completion(client, model, **kwargs):
+    """closure to pre-load the model"""
     return client.beta.chat.completions.parse(
         model=model,
         **kwargs
