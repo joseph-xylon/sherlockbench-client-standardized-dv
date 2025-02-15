@@ -2,7 +2,7 @@ import json
 from pydantic import BaseModel
 
 def list_to_map(input_list):
-    "openai doesn't like arrays much so just assign arbritray keys"
+    """openai doesn't like arrays much so just assign arbritray keys"""
     keys = [chr(97 + i) for i in range(len(input_list))]  # Generate keys: 'a', 'b', 'c', etc.
     return {key: {"type": item} for key, item in zip(keys, input_list)}
 
