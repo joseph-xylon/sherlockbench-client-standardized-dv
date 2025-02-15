@@ -1,7 +1,7 @@
 import pytest
 from sherlockbench_openai.investigate import list_to_map, normalize_args
 
-def test_investigate():
+def test_list_to_map():
     assert list_to_map(['integer', 'integer', 'integer']) == {'a': {'type': 'integer'}, 'b': {'type': 'integer'}, 'c': {'type': 'integer'}}
     assert list_to_map(["boolean", "boolean"]) == {'a': {'type': 'boolean'}, 'b': {'type': 'boolean'}}
     assert list_to_map(['string', 'string']) == {'a': {'type': 'string'}, 'b': {'type': 'string'}}

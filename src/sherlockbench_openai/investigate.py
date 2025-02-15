@@ -40,7 +40,8 @@ class MsgLimitException(Exception):
 
 def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec):
     msg_limit = config["msg-limit"]
-    
+
+    mapped_args = list_to_map(arg_spec)
     tools = [
         {
             "type": "function",
@@ -49,8 +50,8 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
                 "strict": True,
                 "parameters": {
                     "type": "object",
-                    "properties": list_to_map(arg_spec),
-                    "required": list(list_to_map(arg_spec).keys()),
+                    "properties": mapped_args,
+                    "required": list(mapped_args.keys()),
                     "additionalProperties": False
                 },
             },
