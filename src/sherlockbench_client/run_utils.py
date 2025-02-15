@@ -48,4 +48,23 @@ def start_run(provider):
     # we create the run table now even though we don't have all the data we need yet
     q.create_run(cursor, config_non_sensitive, run_id, benchmark_version)
     
-    return (config, db_conn, cursor, run_id, attempts)
+    return (config, db_conn, cursor, run_id, attempts, datetime.now())
+
+def complete_run(postfn, db_conn, cursor, run_id, start_time, total_call_count, config):
+    run_time, score, percent, problem_names = destructure(postfn("complete-run", {}), "run-time", "score", "percent", "problem-names")
+
+    # we have the problem names now so we can add that into the db
+    q.add_problem_names(cursor, problem_names)
+
+    # save the results to the db
+    q.save_run_result(cursor, run_id, start_time, score, percent, total_call_count)
+
+    # print the results
+    print("\n### SYSTEM: run complete for model `" + config["model"] + "`.")
+    print("Final score:", score["numerator"], "/", score["denominator"])
+    print("Percent:", percent)
+    
+    # Why do database libraries require so much boilerplate?
+    db_conn.commit()
+    cursor.close()
+    db_conn.close()

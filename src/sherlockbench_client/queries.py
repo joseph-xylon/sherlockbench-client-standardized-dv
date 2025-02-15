@@ -39,7 +39,7 @@ def add_problem_names(cursor, problem_names):
         )
         cursor.execute(str(update_query))
 
-def save_run_result(cursor, run_id, start_time, score, percent, completionfn):
+def save_run_result(cursor, run_id, start_time, score, percent, total_call_count):
     runs = Table("runs")
 
     update_query = (
@@ -47,7 +47,7 @@ def save_run_result(cursor, run_id, start_time, score, percent, completionfn):
          .set(runs.total_run_time, (datetime.now() - start_time).total_seconds())
          .set(runs.final_score, json.dumps({"numerator": score["numerator"], "denominator": score["denominator"]}))
          .set(runs.score_percent, percent)
-         .set(runs.total_api_calls, completionfn.total_call_count)
+         .set(runs.total_api_calls, total_call_count)
          .where(runs.id == run_id)
 )
     cursor.execute(str(update_query))

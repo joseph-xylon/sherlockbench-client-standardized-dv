@@ -1,5 +1,5 @@
 from openai import OpenAI, LengthFinishReasonError
-from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, start_run
+from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, start_run, complete_run
 
 from .prompts import initial_messages
 from .investigate import investigate
@@ -38,9 +38,7 @@ def investigate_and_verify(postfn, completionfn, config, attempt_id, arg_spec, r
     return verification_result
 
 def main():
-    config, db_conn, cursor, run_id, attempts = start_run("openai")
-
-    start_time = datetime.now()
+    config, db_conn, cursor, run_id, attempts, start_time = start_run("openai")
 
     client = OpenAI(api_key=config['api-keys']['openai'])
 
@@ -54,23 +52,7 @@ def main():
     for attempt in attempts:
         investigate_and_verify(postfn, completionfn, config, attempt["attempt-id"], attempt["fn-args"], run_id, cursor)
 
-    run_time, score, percent, problem_names = destructure(postfn("complete-run", {}), "run-time", "score", "percent", "problem-names")
-
-    # we have the problem names now so we can add that into the db
-    q.add_problem_names(cursor, problem_names)
-
-    # save the results to the db
-    q.save_run_result(cursor, run_id, start_time, score, percent, completionfn)
-
-    # print the results
-    print("\n### SYSTEM: run complete for model `" + config["model"] + "`.")
-    print("Final score:", score["numerator"], "/", score["denominator"])
-    print("Percent:", percent)
-    
-    # Why do database libraries require so much boilerplate?
-    db_conn.commit()
-    cursor.close()
-    db_conn.close()
+    complete_run(postfn, db_conn, cursor, run_id, start_time, completionfn.total_call_count, config)
 
 if __name__ == "__main__":
     main()
