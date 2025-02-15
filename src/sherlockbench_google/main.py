@@ -1,14 +1,49 @@
 from google import genai
 from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, start_run, complete_run
 
+from .investigate import investigate
+
+from datetime import datetime
+
+def new_chat(client, model):
+    """return a function which generates new chats"""
+
+    def fngen():
+        return client.chats.create(model=model).send_message
+
+    return fngen
+
+def investigate_and_verify(postfn, chatfn, config, attempt_id, arg_spec, run_id, cursor):
+    start_time = datetime.now()
+    start_api_calls = chatfn.total_call_count
+
+    # setup the printer
+    printer = AccumulatingPrinter()
+
+    printer.print("\n### SYSTEM: interrogating function with args", arg_spec)
+
+    chatfn.renew_llmfn()
+    tool_call_count = investigate(config, postfn, chatfn, printer, attempt_id, arg_spec)
+
+    print("tool_call_count: ", tool_call_count)
+
 def main():
-    config, db_conn, cursor, run_id, attempts, start_time = start_run("openai")
+    config, db_conn, cursor, run_id, attempts, start_time = start_run("google")
 
     client = genai.Client(api_key=config['api-keys']['google'])
+    chat = new_chat(client, model=config['model'])
 
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents="Explain how AI works",
-    )
+    postfn = lambda *args: post(config["base-url"], run_id, *args)
 
-    print(response.text)
+    chatfn = LLMRateLimiter(rate_limit_seconds=config['rate-limit'],
+                            llmfn=lambda *args, **kwargs: None,  # noop
+                            backoff_exceptions=(),
+                            renewfn=new_chat(client, config['model']))
+
+    for attempt in attempts:
+        investigate_and_verify(postfn, chatfn, config, attempt["attempt-id"], attempt["fn-args"], run_id, cursor)
+
+    complete_run(postfn, db_conn, cursor, run_id, start_time, chatfn.total_call_count, config)
+
+if __name__ == "__main__":
+    main()
