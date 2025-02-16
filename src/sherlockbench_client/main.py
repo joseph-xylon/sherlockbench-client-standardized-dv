@@ -1,5 +1,6 @@
 import time
 import yaml
+import copy
 import requests
 import shutil
 import textwrap
@@ -135,7 +136,7 @@ class LLMRateLimiter:
         self.last_call_time = None
         self.total_call_count = 0
 
-    def __call__(self, *args, **kwargs):
+    def handle_call(self, llmfn, *args, **kwargs):
         """
         Call the LLM while enforcing the rate limit.
         """
@@ -153,7 +154,7 @@ class LLMRateLimiter:
 
         try:
             # Call the function
-            return self.llmfn(*args, **kwargs)
+            return llmfn(*args, **kwargs)
         except self.backoff_exceptions as e:
             print()
             print(e)
@@ -163,8 +164,14 @@ class LLMRateLimiter:
             time.sleep(300)
 
             self.last_call_time = time.time()
-            return self.llmfn(*args, **kwargs)
+            return llmfn(*args, **kwargs)
 
+    def __call__(self, *args, **kwargs):
+        return self.handle_call(self.llmfn, *args, **kwargs)
+
+    def stateless_call(self, *args, **kwargs):
+        return self.handle_call(copy.deepcopy(self.llmfn), *args, **kwargs)
+    
     def renew_llmfn(self):
         if self.renewfn:
             self.llmfn = self.renewfn()

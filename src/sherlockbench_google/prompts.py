@@ -11,3 +11,14 @@ investigation_message = """Hi. I have a mystery function and I want to find out 
 
 I would like you to test my function using the provided tool until you think you know what it does, then tell me."""
 
+def make_verification_message(f_input):
+    formatted = f_input
+    
+    return f"""To test your theory, please tell me what is the expected output from the function with this input:
+
+{formatted}
+
+You no-longer have access to the tool because I am testing if you have got it right.
+
+Please respond in JSON with two keys: \"thoughts\" and \"expected_output\".
+expected_output should contain the output you expect from the function."""

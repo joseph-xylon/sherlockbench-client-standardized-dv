@@ -66,10 +66,11 @@ def investigate(config, postfn, chatfn, printer, attempt_id, arg_spec):
     tool_call_counter = 0
     next_message = investigation_message
     for count in range(0, msg_limit):
-        print("next_message:", next_message)
+        #print("next_message:", next_message)
         completion = chatfn(message=next_message, config=config)
 
         llm_response = completion.candidates[0].content
+        #pprint(to_dict(completion))
         #pprint(llm_response)
 
         message = next((obj.text for obj in llm_response.parts if obj.text is not None), None)

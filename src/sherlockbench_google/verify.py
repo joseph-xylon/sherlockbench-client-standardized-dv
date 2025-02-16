@@ -1,10 +1,21 @@
-from anthropic.types import TextBlock, ToolUseBlock
-import json
-from .prompts import make_verification_message
+import sys
+
+from google.genai import types
 from sherlockbench_client import destructure
+import json
+import re
+
+from .prompts import make_verification_message, sys_instruct
 from pprint import pprint
 
-def verify(config, postfn, completionfn, messages, printer, attempt_id):
+def trim_to_json(content: str) -> str:
+    """
+    Removes anything before the first `{` and after the last `}` in the given string.
+    """
+    match = re.search(r'\{.*\}', content, re.DOTALL)
+    return match.group(0) if match else ""
+
+def verify(config, postfn, chatfn, printer, attempt_id):
     # for each verification
     while (v_data := postfn("next-verification", {"attempt-id": attempt_id})):
         verification = v_data["next-verification"]
@@ -13,25 +24,18 @@ def verify(config, postfn, completionfn, messages, printer, attempt_id):
         printer.print("\n### SYSTEM: inputs:")
         printer.indented_print(verification)
 
-        # Anthropic 'Requests which include `tool_use` or `tool_result` blocks must define tools.'
-        vmessages = [messages[-1]] + [make_verification_message(verification)]
+        config = types.GenerateContentConfigDict(
+            system_instruction=sys_instruct
+        )
 
-        # try:
-        completion = completionfn(messages=vmessages)
-        # except _ as e:
+        chat_response = chatfn.stateless_call(message=make_verification_message(verification), config=config)
 
-        # claude sometimes gives invalid json. retry a few times
-        attempts = 0
-        while attempts < 3:
-            response = next((item.text for item in completion.content if isinstance(item, TextBlock)), None)
-
-            try:
-                thoughts, expected_output = destructure(json.loads(response), "thoughts", "expected_output")
-                break
-
-            except json.JSONDecodeError as e:
-                attempts += 1
-                print(f"Attempt {attempts} failed: {e}")
+        try:
+            thoughts, expected_output = destructure(json.loads(trim_to_json(chat_response.text)), "thoughts", "expected_output")
+        except json.JSONDecodeError as e:
+            printer.print("\n### SYSTEM: bad json:")
+            printer.print(chat_response.text)
+            return False
 
         printer.print("\n--- LLM ---")
         printer.indented_print(thoughts, "\n")
