@@ -1,7 +1,7 @@
 import sys
 
 from google.genai import types
-from sherlockbench_client import destructure
+from sherlockbench_client import destructure, value_list_to_map
 import json
 import re
 
@@ -28,7 +28,7 @@ def verify(config, postfn, chatfn, printer, attempt_id):
             system_instruction=sys_instruct
         )
 
-        chat_response = chatfn.stateless_call(message=make_verification_message(verification), config=config)
+        chat_response = chatfn.stateless_call(message=make_verification_message(value_list_to_map(verification)), config=config)
 
         try:
             thoughts, expected_output = destructure(json.loads(trim_to_json(chat_response.text)), "thoughts", "expected_output")

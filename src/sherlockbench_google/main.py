@@ -44,7 +44,7 @@ def main():
 
     chatfn = LLMRateLimiter(rate_limit_seconds=config['rate-limit'],
                             llmfn=lambda *args, **kwargs: None,  # noop
-                            backoff_exceptions=(genai.errors.ClientError),
+                            backoff_exceptions=(genai.errors.ClientError, genai.errors.ServerError),
                             renewfn=new_chat(client, config['model']))
 
     for attempt in attempts:

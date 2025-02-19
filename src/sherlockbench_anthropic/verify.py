@@ -1,7 +1,7 @@
 from anthropic.types import TextBlock, ToolUseBlock
 import json
 from .prompts import make_verification_message
-from sherlockbench_client import destructure
+from sherlockbench_client import destructure, value_list_to_map
 from pprint import pprint
 
 def verify(config, postfn, completionfn, messages, printer, attempt_id):
@@ -14,7 +14,7 @@ def verify(config, postfn, completionfn, messages, printer, attempt_id):
         printer.indented_print(verification)
 
         # Anthropic 'Requests which include `tool_use` or `tool_result` blocks must define tools.'
-        vmessages = [messages[-1]] + [make_verification_message(verification)]
+        vmessages = [messages[-1]] + [make_verification_message(value_list_to_map(verification))]
 
         # try:
         completion = completionfn(messages=vmessages)

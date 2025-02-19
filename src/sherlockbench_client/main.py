@@ -179,3 +179,8 @@ class LLMRateLimiter:
             return True
         else:
             return False
+
+def value_list_to_map(xs):
+    """take a vector and return map with alphabetical keys"""
+    keys = [chr(97 + i) for i in range(len(xs))]  # Generate keys: 'a', 'b', 'c', etc.
+    return dict(zip(keys, xs))

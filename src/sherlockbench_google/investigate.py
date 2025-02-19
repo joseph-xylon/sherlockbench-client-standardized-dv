@@ -51,6 +51,7 @@ def investigate(config, postfn, chatfn, printer, attempt_id, arg_spec):
             description="Use this tool to test the mystery function.",
             parameters=types.Schema(
                 properties=mapped_args,
+                required=list(mapped_args.keys()),
                 type='OBJECT',
             ),
         )

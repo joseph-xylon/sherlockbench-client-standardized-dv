@@ -2,7 +2,7 @@ import json
 from openai import LengthFinishReasonError
 from pydantic import BaseModel
 from .prompts import make_verification_message
-from sherlockbench_client import destructure, make_schema
+from sherlockbench_client import destructure, make_schema, value_list_to_map
 
 def verify(config, postfn, completionfn, messages, printer, attempt_id):
     # for each verification
@@ -13,7 +13,7 @@ def verify(config, postfn, completionfn, messages, printer, attempt_id):
         printer.print("\n### SYSTEM: inputs:")
         printer.indented_print(verification)
 
-        vmessages = messages + [make_verification_message(verification)]
+        vmessages = messages + [make_verification_message(value_list_to_map(verification))]
 
         try:
             completion = completionfn(messages=vmessages,
