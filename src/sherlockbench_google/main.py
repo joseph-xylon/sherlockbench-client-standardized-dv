@@ -48,7 +48,7 @@ def main():
                             renewfn=new_chat(client, config['model']))
 
     for attempt in attempts:
-        investigate_and_verify(postfn, chatfn, config, attempt["attempt-id"], attempt["fn-args"], run_id, cursor)
+        investigate_and_verify(postfn, chatfn, config, attempt["attempt-id"], attempt["arg-spec"], run_id, cursor)
 
     complete_run(postfn, db_conn, cursor, run_id, start_time, chatfn.total_call_count, config)
 
