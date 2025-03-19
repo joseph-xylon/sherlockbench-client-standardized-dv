@@ -3,6 +3,20 @@ from . import queries as q
 import argparse
 from datetime import datetime
 import psycopg2
+import re
+
+def is_valid_uuid(uuid_string):
+    """
+    Check if a string is a valid UUID.
+    
+    Args:
+        uuid_string (str): String to validate as UUID
+        
+    Returns:
+        bool: True if string is a valid UUID, False otherwise
+    """
+    uuid_pattern = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
+    return bool(uuid_pattern.match(uuid_string))
 
 def start_run(provider):
     """Various things to get the run started:
@@ -14,7 +28,7 @@ def start_run(provider):
     """
 
     parser = argparse.ArgumentParser(description="Run SherlockBench with an optional argument.")
-    parser.add_argument("arg", nargs="?", default=None, help="The id of an existing run")
+    parser.add_argument("arg", nargs="?", default="sherlockbench.sample-problems/easy3", help="The id of an existing run, or the id of a problem-set.")
 
     args = parser.parse_args()
 
@@ -32,8 +46,11 @@ def start_run(provider):
     if subset:
         post_data["subset"] = subset
 
-    if args.arg:
+    if is_valid_uuid(args.arg):
         post_data["existing-run-id"] = args.arg
+
+    else:
+        post_data["problem-set"] = args.arg
     
     run_id, run_type, benchmark_version, attempts = destructure(post(config['base-url'],
                                                                      None,
