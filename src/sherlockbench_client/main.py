@@ -38,6 +38,16 @@ def post(base_url, run_id, path, data):
         
     return response.json()
 
+def get(base_url, path):
+    try:
+        response = requests.get(base_url + path)
+        response.raise_for_status()
+    except HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err}")
+        return {"error": str(http_err)}
+        
+    return response.json()
+
 class AbortException(Exception):
     """Custom exception for user aborting the operation."""
     pass

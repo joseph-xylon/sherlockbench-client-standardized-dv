@@ -1,4 +1,4 @@
-from .main import load_config, destructure, post
+from .main import load_config, destructure, post, get
 from . import queries as q
 import argparse
 from datetime import datetime
@@ -27,14 +27,35 @@ def start_run(provider):
        - add the run info to the db
     """
 
-    parser = argparse.ArgumentParser(description="Run SherlockBench with an optional argument.")
-    parser.add_argument("arg", nargs="?", default="sherlockbench.sample-problems/easy3", help="The id of an existing run, or the id of a problem-set.")
+    parser = argparse.ArgumentParser(description="Run SherlockBench with a required argument.")
+    parser.add_argument("arg", nargs="?", help="The id of an existing run, or the id of a problem-set. Use 'list' to see available problem sets.")
 
     args = parser.parse_args()
+    
+    # Check if arg is missing and print usage
+    if args.arg is None:
+        parser.print_help()
+        print("\nTip: Use 'list' as the argument to see available problem sets.")
+        exit(1)
 
     config_raw = load_config("resources/config.yaml")
     config_non_sensitive = {k: v for k, v in config_raw.items() if k != "providers"} | config_raw["providers"][provider]
     config = config_non_sensitive | load_config("resources/credentials.yaml")
+
+    # Handle the "list" argument - get and print available problem sets
+    if args.arg == "list":
+        response = get(config['base-url'], "problem-sets")
+        problem_sets = response.get('problem-sets', {})
+        
+        print("Available problem sets:")
+        print("======================")
+        
+        for category, problems in problem_sets.items():
+            print(f"\n{category}:")
+            for problem in problems:
+                print(f"  - {problem['name']} :: {problem['id']}")
+        
+        exit(0)
 
     # connect to postgresql
     db_conn = psycopg2.connect(config["postgres-url"])
