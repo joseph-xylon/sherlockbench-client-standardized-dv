@@ -16,17 +16,22 @@ def verify(config, postfn, completionfn, messages, printer, attempt_id):
         # Anthropic 'Requests which include `tool_use` or `tool_result` blocks must define tools.'
         vmessages = [messages[-1]] + [make_verification_message(value_list_to_map(verification))]
 
-        # try:
-        completion = completionfn(messages=vmessages)
-        # except _ as e:
-
         # claude sometimes gives invalid json. retry a few times
         attempts = 0
         while attempts < 3:
+            completion = completionfn(messages=vmessages)
+
             response = next((item.text for item in completion.content if isinstance(item, TextBlock)), None)
 
             try:
-                thoughts, expected_output = destructure(json.loads(response), "thoughts", "expected_output")
+                # Strip markdown code block markers if present
+                cleaned_response = response
+                if cleaned_response and cleaned_response.strip().startswith("```json"):
+                    cleaned_response = cleaned_response.strip()[7:].strip()
+                if cleaned_response and cleaned_response.strip().endswith("```"):
+                    cleaned_response = cleaned_response.strip()[:-3].strip()
+                
+                thoughts, expected_output = destructure(json.loads(cleaned_response), "thoughts", "expected_output")
                 break
 
             except json.JSONDecodeError as e:
