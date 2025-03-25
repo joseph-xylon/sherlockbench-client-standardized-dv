@@ -38,7 +38,7 @@ def main():
     config, db_conn, cursor, run_id, attempts, start_time = start_run("google")
 
     client = genai.Client(api_key=config['api-keys']['google'])
-    chat = new_chat(client, model=config['model'])
+    #chat = new_chat(client, model=config['model'])
 
     postfn = lambda *args: post(config["base-url"], run_id, *args)
 
