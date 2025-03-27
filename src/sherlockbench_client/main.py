@@ -33,8 +33,10 @@ def post(base_url, run_id, path, data):
     except HTTPError as http_err:
         print(f"HTTP error occurred: {http_err}")
 
-        if response.json()["error"] == "your arguments don't comply with the schema":
-            return {"output": "your arguments don't comply with the schema"}
+        print(response.json().get("error", "no error"))
+
+        if response.status_code == 400 and "error" in response.json():
+            return {"output": response.json()["error"]}
         
     return response.json()
 

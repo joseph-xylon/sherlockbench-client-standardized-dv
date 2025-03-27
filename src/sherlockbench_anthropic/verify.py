@@ -18,6 +18,11 @@ def verify(config, postfn, completionfn, messages, printer, attempt_id):
 
         # claude sometimes gives invalid json. retry a few times
         attempts = 0
+
+        # to prevent UnboundLocalError later
+        thoughts = ""
+        expected_output = ""
+
         while attempts < 3:
             completion = completionfn(messages=vmessages)
 
@@ -37,6 +42,7 @@ def verify(config, postfn, completionfn, messages, printer, attempt_id):
             except json.JSONDecodeError as e:
                 attempts += 1
                 print(f"Attempt {attempts} failed: {e}")
+                print(cleaned_response)
 
         printer.print("\n--- LLM ---")
         printer.indented_print(thoughts, "\n")

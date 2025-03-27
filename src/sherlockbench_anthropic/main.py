@@ -10,11 +10,24 @@ import argparse
 
 def create_completion(client, model, **kwargs):
     """closure to pre-load the model"""
-    return client.messages.create(
-        model=model,
-        max_tokens=8192,
-        **kwargs
-    )
+    thinkingsuffix="+thinking"
+    if model.endswith(thinkingsuffix):
+        return client.messages.create(
+            model=model.removesuffix(thinkingsuffix),
+            max_tokens=20000,
+            thinking={
+                "type": "enabled",
+                "budget_tokens": 16000
+            },
+            **kwargs
+        )
+
+    else:
+        return client.messages.create(
+            model=model,
+            max_tokens=8192,
+            **kwargs
+        )
 
 def investigate_and_verify(postfn, completionfn, config, attempt_id, arg_spec, run_id, cursor):
     start_time = datetime.now()

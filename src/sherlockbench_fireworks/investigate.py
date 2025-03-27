@@ -17,16 +17,24 @@ def handle_tool_call(postfn, printer, attempt_id, call):
     arguments = json.loads(call.function.arguments)
     args_norm = normalize_args(arguments)
 
-    fnoutput = postfn("test-function", {"attempt-id": attempt_id,
-                                        "args": args_norm})["output"]
+    try:
+        fnoutput = postfn("test-function", {"attempt-id": attempt_id,
+                                            "args": args_norm})["output"]
 
-    print_tool_call(printer, args_norm, fnoutput)
+        print_tool_call(printer, args_norm, fnoutput)
 
-    function_call_result_message = {
-        "role": "tool",
-        "content": json.dumps(fnoutput),
-        "tool_call_id": call.id
-    }
+        function_call_result_message = {
+            "role": "tool",
+            "content": json.dumps(fnoutput),
+            "tool_call_id": call.id
+        }
+
+    except KeyError as e:
+        function_call_result_message = {
+            "role": "tool",
+            "content": "invalid schema when calling tool",
+            "tool_call_id": call.id
+        }
 
     return function_call_result_message
 

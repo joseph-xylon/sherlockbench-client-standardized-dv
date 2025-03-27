@@ -1,4 +1,4 @@
-from anthropic.types import TextBlock, ToolUseBlock
+from anthropic.types import TextBlock, ToolUseBlock, ThinkingBlock
 from pprint import pprint
 
 import json
@@ -27,18 +27,23 @@ def parse_completion(content):
     #text = next((d["text"] for d in content if d.get("type") == "text"), None)
     #tool = next((d["input"] for d in content if d.get("type") == "tool_use"), None)
 
+    # using next allows us to have a default value
+    thinking_block = next((item for item in content if isinstance(item, ThinkingBlock)), None)
     text = next((item.text for item in content if isinstance(item, TextBlock)), None)
     tool = [item for item in content if isinstance(item, ToolUseBlock)]
 
-    return (text, tool)
+    return (thinking_block, text, tool)
 
 def handle_tool_call(postfn, printer, attempt_id, call):
     arguments = call.input
     call_id = call.id
     args_norm = normalize_args(arguments)
 
-    fnoutput = postfn("test-function", {"attempt-id": attempt_id,
-                                        "args": args_norm})["output"]
+    response = postfn("test-function", {"attempt-id": attempt_id,
+                                        "args": args_norm})
+    
+    # Handle case where the output key is missing
+    fnoutput = response.get("output", "Error calling tool")
 
     print_tool_call(printer, args_norm, fnoutput)
 
@@ -70,17 +75,26 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
         #pprint(messages)
         completion = completionfn(messages=messages, tools=tools)
 
-        message, tool_calls = parse_completion(completion.content)
+        thinking, message, tool_calls = parse_completion(completion.content)
 
         printer.print("\n--- LLM ---")
         printer.indented_print(message)
         
         if tool_calls:
             printer.print("\n### SYSTEM: calling tool")
-            messages.append({"role": "assistant",
-                             "content":
-                             ([] if message is None else  # Anthropic d
-                             [{"type": "text", "text": message}]) + tool_calls})
+            # Add thinking block for models with +thinking suffix
+            content_blocks = []
+            
+            if thinking:
+                # Convert the ThinkingBlock object to a dict for the API
+                content_blocks.append({"type": "thinking", "thinking": thinking.thinking, "signature": thinking.signature})
+                
+            if message is not None:
+                content_blocks.append({"type": "text", "text": message})
+                
+            content_blocks.extend(tool_calls)
+            
+            messages.append({"role": "assistant", "content": content_blocks})
 
             tool_call_user_message = {
                 "role": "user",
@@ -97,9 +111,17 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
         # if it didn't call the tool we can move on to verifications
         else:
             printer.print("\n### SYSTEM: The tool was used", tool_call_counter, "times.")
-            messages.append({"role": "assistant",
-                             "content": [{"type": "text",
-                               "text": message}]})
+            
+            content_blocks = []
+            
+            if thinking:
+                # Convert the ThinkingBlock object to a dict for the API
+                content_blocks.append({"type": "thinking", "thinking": thinking.thinking, "signature": thinking.signature})
+                
+            if message is not None:
+                content_blocks.append({"type": "text", "text": message})
+            
+            messages.append({"role": "assistant", "content": content_blocks})
 
             return (messages, tool_call_counter)
         
