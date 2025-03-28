@@ -1,4 +1,4 @@
-from anthropic.types import TextBlock, ToolUseBlock, ThinkingBlock
+from anthropic.types import TextBlock, ToolUseBlock, ThinkingBlock, RedactedThinkingBlock
 from pprint import pprint
 
 import json
@@ -29,10 +29,11 @@ def parse_completion(content):
 
     # using next allows us to have a default value
     thinking_block = next((item for item in content if isinstance(item, ThinkingBlock)), None)
+    redacted_thinking_block = next((item for item in content if isinstance(item, RedactedThinkingBlock)), None)
     text = next((item.text for item in content if isinstance(item, TextBlock)), None)
     tool = [item for item in content if isinstance(item, ToolUseBlock)]
 
-    return (thinking_block, text, tool)
+    return (thinking_block, redacted_thinking_block, text, tool)
 
 def handle_tool_call(postfn, printer, attempt_id, call):
     arguments = call.input
@@ -75,7 +76,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
         #pprint(messages)
         completion = completionfn(messages=messages, tools=tools)
 
-        thinking, message, tool_calls = parse_completion(completion.content)
+        thinking, redacted_thinking, message, tool_calls = parse_completion(completion.content)
 
         printer.print("\n--- LLM ---")
         printer.indented_print(message)
@@ -88,6 +89,10 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
             if thinking:
                 # Convert the ThinkingBlock object to a dict for the API
                 content_blocks.append({"type": "thinking", "thinking": thinking.thinking, "signature": thinking.signature})
+            
+            if redacted_thinking:
+                # Handle redacted thinking block
+                content_blocks.append({"type": "redacted_thinking"})
                 
             if message is not None:
                 content_blocks.append({"type": "text", "text": message})
@@ -117,6 +122,10 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
             if thinking:
                 # Convert the ThinkingBlock object to a dict for the API
                 content_blocks.append({"type": "thinking", "thinking": thinking.thinking, "signature": thinking.signature})
+            
+            if redacted_thinking:
+                # Handle redacted thinking block
+                content_blocks.append({"type": "redacted_thinking"})
                 
             if message is not None:
                 content_blocks.append({"type": "text", "text": message})
