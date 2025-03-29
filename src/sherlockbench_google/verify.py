@@ -1,21 +1,9 @@
 import sys
+from sherlockbench_client import destructure, make_schema, value_list_to_map
+from .utility import save_message
+from .prompts import make_verification_message
 
-from google.genai import types
-from sherlockbench_client import destructure, value_list_to_map
-import json
-import re
-
-from .prompts import make_verification_message, sys_instruct
-from pprint import pprint
-
-def trim_to_json(content: str) -> str:
-    """
-    Removes anything before the first `{` and after the last `}` in the given string.
-    """
-    match = re.search(r'\{.*\}', content, re.DOTALL)
-    return match.group(0) if match else ""
-
-def verify(config, postfn, chatfn, printer, attempt_id):
+def verify(config, postfn, completionfn, messages, printer, attempt_id):
     # for each verification
     while (v_data := postfn("next-verification", {"attempt-id": attempt_id})):
         verification = v_data["next-verification"]
@@ -24,18 +12,13 @@ def verify(config, postfn, chatfn, printer, attempt_id):
         printer.print("\n### SYSTEM: inputs:")
         printer.indented_print(verification)
 
-        config = types.GenerateContentConfigDict(
-            system_instruction=sys_instruct
-        )
+        vmessages = messages + [save_message("user", make_verification_message(value_list_to_map(verification)))]
 
-        chat_response = chatfn.stateless_call(message=make_verification_message(value_list_to_map(verification)), config=config)
+        completion = completionfn(contents=vmessages,
+                                  schema=make_schema(output_type))
 
-        try:
-            thoughts, expected_output = destructure(json.loads(trim_to_json(chat_response.text)), "thoughts", "expected_output")
-        except json.JSONDecodeError as e:
-            printer.print("\n### SYSTEM: bad json:")
-            printer.print(chat_response.text)
-            return False
+        thoughts = completion.parsed.thoughts
+        expected_output = completion.parsed.expected_output
 
         printer.print("\n--- LLM ---")
         printer.indented_print(thoughts, "\n")
