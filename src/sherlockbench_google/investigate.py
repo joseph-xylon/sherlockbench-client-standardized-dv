@@ -1,4 +1,5 @@
 import sys
+import time
 from google.genai import types
 from .utility import save_message
 
@@ -52,10 +53,6 @@ def get_text_from_completion(obj_list):
     :param obj_list: List of objects to process
     :return: Concatenated string of all .text properties
     """
-    if obj_list.candidates is None:
-        print("DEBUG")
-        print(obj_list.candidates)
-    
     result = ""
     for obj in obj_list.candidates[0].content.parts:
         # Use getattr with a default value to avoid AttributeError
@@ -85,7 +82,16 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
     # call the LLM repeatedly until it stops calling it's tool
     tool_call_counter = 0
     for count in range(0, msg_limit):
-        completion = completionfn(contents=messages, tools=tools)
+        # sometimes gemini-2.5-pro returns None
+        attempts = 0
+        for _ in range(3):
+            completion = completionfn(contents=messages, tools=tools)
+
+            if completion.candidates is None:
+                print("Got None response. Retrying after delay.")
+                time.sleep(60)
+            else:    
+                break
 
         message = get_text_from_completion(completion)
         tool_calls = completion.function_calls
