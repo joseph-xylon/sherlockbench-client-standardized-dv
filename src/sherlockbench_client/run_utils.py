@@ -29,6 +29,7 @@ def start_run(provider):
 
     parser = argparse.ArgumentParser(description="Run SherlockBench with a required argument.")
     parser.add_argument("arg", nargs="?", help="The id of an existing run, or the id of a problem-set. Use 'list' to see available problem sets.")
+    parser.add_argument("--attempts-per-problem", type=int, help="Number of attempts per problem")
 
     args = parser.parse_args()
     
@@ -66,6 +67,9 @@ def start_run(provider):
 
     if subset:
         post_data["subset"] = subset
+
+    if args.attempts_per_problem:
+        post_data["attempts-per-problem"] = args.attempts_per_problem
 
     if is_valid_uuid(args.arg):
         post_data["existing-run-id"] = args.arg
