@@ -10,10 +10,9 @@ import psycopg2
 
 msg_limit = 50
 
-def create_completion(client, model, **kwargs):
+def create_completion(client, **kwargs):
     """closure to pre-load the model"""
     return client.chat.completions.create(
-        model=model,
         **kwargs
     )
 
@@ -44,7 +43,12 @@ def main():
                     api_key=config['api-keys']['fireworks'])
 
     postfn = lambda *args: post(config["base-url"], run_id, *args)
-    completionfn = lambda **kwargs: create_completion(client, config['model'], **kwargs)
+
+    def completionfn(**kwargs):
+        if "temperature" in config:
+            kwargs["temperature"] = config['temperature']
+            
+        return create_completion(client, model=config['model'], **kwargs)
 
     completionfn = LLMRateLimiter(rate_limit_seconds=config['rate-limit'],
                                   llmfn=completionfn,

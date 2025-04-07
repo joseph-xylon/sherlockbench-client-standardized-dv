@@ -12,16 +12,18 @@ from .verify import verify
 
 from datetime import datetime
 
-def create_completion(client, model, tools=None, schema=None, **kwargs):
+def create_completion(client, tools=None, schema=None, temperature=None, **kwargs):
     """closure to pre-load the model"""
     #print("CONTENTS")
     #print(contents)
 
     config_args = {
         "system_instruction": system_message,
-        #"max_output_tokens": 3,
-        #"temperature": 0.3,
+        #"max_output_tokens": 3
     }
+
+    if temperature is not None:
+        config_args["temperature"] = temperature
     
     if tools is not None:
         config_args["tools"] = tools
@@ -31,7 +33,6 @@ def create_completion(client, model, tools=None, schema=None, **kwargs):
         config_args["response_mime_type"] = 'application/json'
 
     return client.models.generate_content(
-        model=model,
         config=types.GenerateContentConfig(**config_args),
         **kwargs
     )
@@ -62,7 +63,13 @@ def main():
     client = genai.Client(api_key=config['api-keys']['google'])
 
     postfn = lambda *args: post(config["base-url"], run_id, *args)
-    completionfn = lambda **kwargs: create_completion(client, config['model'], **kwargs)
+
+    def completionfn(**kwargs):
+        if "temperature" in config:
+            kwargs["temperature"] = config['temperature']
+            
+        return create_completion(client, model=config['model'], **kwargs)
+
     completionfn = LLMRateLimiter(rate_limit_seconds=config['rate-limit'],
                                   llmfn=completionfn,
                                   backoff_exceptions=())

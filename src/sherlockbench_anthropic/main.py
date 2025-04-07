@@ -10,6 +10,7 @@ import argparse
 
 def create_completion(client, model, **kwargs):
     """closure to pre-load the model"""
+
     thinkingsuffix="+thinking"
     if model.endswith(thinkingsuffix):
         return client.messages.create(
@@ -55,7 +56,12 @@ def main():
     client = anthropic.Anthropic(api_key=config['api-keys']['anthropic'])
 
     postfn = lambda *args: post(config["base-url"], run_id, *args)
-    completionfn = lambda **kwargs: create_completion(client, config['model'], **kwargs)
+
+    def completionfn(**kwargs):
+        if "temperature" in config:
+            kwargs["temperature"] = config['temperature']
+
+        return create_completion(client, config['model'], **kwargs)
 
     completionfn = LLMRateLimiter(rate_limit_seconds=config['rate-limit'],
                                   llmfn=completionfn,
