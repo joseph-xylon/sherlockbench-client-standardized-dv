@@ -47,7 +47,10 @@ def main():
     def completionfn(**kwargs):
         if "temperature" in config:
             kwargs["temperature"] = config['temperature']
-            
+
+        if "reasoning_effort" in config:
+            kwargs["reasoning_effort"] = config['reasoning_effort']
+
         return create_completion(client, model=config['model'], **kwargs)
 
     completionfn = LLMRateLimiter(rate_limit_seconds=config['rate-limit'],

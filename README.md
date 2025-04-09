@@ -53,25 +53,26 @@ providers:
     model: "gpt-4o-mini-2024-07-18"
     #model: "gpt-4o-2024-08-06"
     #model: "o3-mini-2025-01-31"
+    #reasoning_effort: "medium"
+    #temperature: 0.6
     rate-limit: 5
-    temperature: 0.6
 
   anthropic:
     model: "claude-3-5-haiku-20241022"
     #model: "claude-3-5-sonnet-20241022"
-    rate-limit: 10
     #temperature: 0.9
+    rate-limit: 10
 
   google:
     model: "gemini-2.0-flash"
     #model: "gemini-2.0-pro-exp-02-05"
-    rate-limit: 10
     #temperature: 0.9
+    rate-limit: 10
 
   fireworks:
     model: "accounts/fireworks/models/llama-v3p1-405b-instruct"
-    rate-limit: 10
     #temperature: 0.9
+    rate-limit: 10
 
 ```
 
