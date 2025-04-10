@@ -161,22 +161,25 @@ class LLMRateLimiter:
             if sleep_time > 0:
                 time.sleep(sleep_time)
         
-        self.last_call_time = time.time()
+        max_retries = 3
+        for retry in range(max_retries):
+            try:
+                # Call the function
+                self.last_call_time = time.time()
+                return llmfn(*args, **kwargs)
 
-        try:
-            # Call the function
-            return llmfn(*args, **kwargs)
-
-        except self.backoff_exceptions as e:
-            print()
-            print(e)
-
-            self.rate_limit_seconds += 1
-            print(f"\n### SYSTEM: backing off for 5 minutes and increasing rate limit to {self.rate_limit_seconds} seconds")
-            time.sleep(300)
-
-            self.last_call_time = time.time()
-            return llmfn(*args, **kwargs)
+            except self.backoff_exceptions as e:
+                print()
+                print(e)
+                
+                self.rate_limit_seconds += 1
+                print(f"\n### SYSTEM: backing off for 5 minutes and increasing rate limit to {self.rate_limit_seconds} seconds (retry {retry+1}/{max_retries})")
+                
+                # If this was the last retry, re-raise the exception
+                if retry == max_retries - 1:
+                    raise
+                    
+                time.sleep(300)
 
     def __call__(self, *args, **kwargs):
         return self.handle_call(self.llmfn, *args, **kwargs)

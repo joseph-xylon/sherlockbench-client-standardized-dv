@@ -1,6 +1,6 @@
 import sys
 from google import genai
-from google.genai import types
+from google.genai import types, errors
 from pprint import pprint
 
 from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, start_run, complete_run
@@ -72,7 +72,7 @@ def main():
 
     completionfn = LLMRateLimiter(rate_limit_seconds=config['rate-limit'],
                                   llmfn=completionfn,
-                                  backoff_exceptions=())
+                                  backoff_exceptions=(errors.ServerError))
     
     for attempt in attempts:
         investigate_and_verify(postfn, completionfn, config, attempt["attempt-id"], attempt["arg-spec"], run_id, cursor)
