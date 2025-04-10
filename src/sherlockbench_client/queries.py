@@ -14,6 +14,7 @@ def create_run(cursor, config_non_sensitive, run_id, benchmark_version):
     runs = Table("runs")
     insert_query = Query.into(runs).columns(*run_data.keys()).insert(*run_data.values())
     cursor.execute(str(insert_query))
+    cursor.connection.commit() # Commit after creating run
 
 def add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count, printer, completionfn, start_api_calls, attempt_id):
     attempt_data = {"id": attempt_id,
@@ -26,6 +27,7 @@ def add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count
 
     insert_query = Query.into(Table("attempts")).columns(*attempt_data.keys()).insert(*attempt_data.values())
     cursor.execute(str(insert_query))
+    cursor.connection.commit() # Commit after each attempt to ensure data is saved
 
 def add_problem_names(cursor, problem_names):
     """problem_names is a list of dicts, each containing 'id' and 'function_name'"""
@@ -38,6 +40,8 @@ def add_problem_names(cursor, problem_names):
             .where(attempts.id == problem['id'])
         )
         cursor.execute(str(update_query))
+    
+    cursor.connection.commit() # Commit after updating problem names
 
 def save_run_result(cursor, run_id, start_time, score, percent, total_call_count):
     runs = Table("runs")
@@ -51,3 +55,4 @@ def save_run_result(cursor, run_id, start_time, score, percent, total_call_count
          .where(runs.id == run_id)
 )
     cursor.execute(str(update_query))
+    cursor.connection.commit() # Commit after saving run result
