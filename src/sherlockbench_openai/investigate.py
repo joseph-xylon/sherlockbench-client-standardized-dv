@@ -11,7 +11,19 @@ def normalize_args(input_dict):
     return [input_dict[key] for key in sorted(input_dict.keys())]
 
 def print_tool_call(printer, args, result):
-    printer.indented_print(", ".join(map(str, args)), "→", result)
+    # Clean inputs to handle surrogate characters that can't be encoded
+    clean_args = []
+    for arg in args:
+        if isinstance(arg, str):
+            # Replace surrogates with replacement character
+            arg = arg.encode('utf-8', 'replace').decode('utf-8')
+        clean_args.append(arg)
+
+    # Clean result similarly if it's a string
+    if isinstance(result, str):
+        result = result.encode('utf-8', 'replace').decode('utf-8')
+
+    printer.indented_print(", ".join(map(str, clean_args)), "→", result)
 
 def handle_tool_call(postfn, printer, attempt_id, call):
     arguments = json.loads(call.function.arguments)
@@ -88,7 +100,6 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
                              "content": message})
 
             return (messages, tool_call_counter)
-        
+
     # LLM ran out of messages
     raise MsgLimitException("LLM ran out of messages.")
-
