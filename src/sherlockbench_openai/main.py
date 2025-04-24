@@ -1,4 +1,4 @@
-from openai import OpenAI, LengthFinishReasonError
+from openai import OpenAI, LengthFinishReasonError, APITimeoutError
 from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, start_run, complete_run
 
 from .prompts import initial_messages
@@ -55,7 +55,7 @@ def main():
 
     completionfn = LLMRateLimiter(rate_limit_seconds=config['rate-limit'],
                                   llmfn=completionfn,
-                                  backoff_exceptions=())
+                                  backoff_exceptions=(APITimeoutError))
 
     for attempt in attempts:
         investigate_and_verify(postfn, completionfn, config, attempt["attempt-id"], attempt["arg-spec"], run_id, cursor)
