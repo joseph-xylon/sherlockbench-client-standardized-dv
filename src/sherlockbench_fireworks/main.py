@@ -48,6 +48,9 @@ def main():
         if "temperature" in config:
             kwargs["temperature"] = config['temperature']
             
+        if "max_tokens" in config:
+            kwargs["max_tokens"] = config['max_tokens']
+            
         return create_completion(client, model=config['model'], **kwargs)
 
     completionfn = LLMRateLimiter(rate_limit_seconds=config['rate-limit'],

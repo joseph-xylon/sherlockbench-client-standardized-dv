@@ -1,6 +1,18 @@
 import json
 from openai import BadRequestError
 from pydantic import BaseModel
+import re
+
+def remove_think_blocks(text: str) -> str:
+    """
+    Removes all occurrences of <think>...</think> (including the tags and content in between)
+    from the input multi-line string.
+
+    For Qwen as-per their recommendations: https://huggingface.co/Qwen/Qwen3-235B-A22B
+    """
+    # re.DOTALL makes '.' match newlines as well
+    pattern = r"<think>.*?</think>"
+    return re.sub(pattern, "", text, flags=re.DOTALL)
 
 def list_to_map(input_list):
     """openai doesn't like arrays much so just assign arbritray keys"""
@@ -80,16 +92,18 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
     # call the LLM repeatedly until it stops calling it's tool
     tool_call_counter = 0
     for count in range(0, msg_limit):
-        # this retry logic is specifically for Qwen 3
-        for _ in range(3):
-            try:
-                completion = completionfn(messages=messages, tools=tools)
-                break
+        # # this retry logic is specifically for Qwen 3
+        # for _ in range(3):
+        #     try:
+        #         completion = completionfn(messages=messages, tools=tools)
+        #         break
 
-            except BadRequestError as e:
-                print(e)
-                print("retrying")
+        #     except BadRequestError as e:
+        #         print(e)
+        #         print("retrying")
 
+        completion = completionfn(messages=messages, tools=tools)
+                
         response = completion.choices[0]
         message = response.message.content
         tool_calls = response.message.tool_calls
@@ -100,7 +114,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
         if tool_calls:
             printer.print("\n### SYSTEM: calling tool")
             messages.append({"role": "assistant",
-                             "content": message,
+                             "content": remove_think_blocks(message),
                              "tool_calls": tool_calls})
 
             for call in tool_calls:
@@ -112,7 +126,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
         else:
             printer.print("\n### SYSTEM: The tool was used", tool_call_counter, "times.")
             messages.append({"role": "assistant",
-                             "content": message})
+                             "content": remove_think_blocks(message)})
 
             return (messages, tool_call_counter)
 
