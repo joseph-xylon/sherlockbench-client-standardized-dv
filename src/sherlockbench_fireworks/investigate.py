@@ -1,4 +1,5 @@
 import json
+from openai import BadRequestError
 from pydantic import BaseModel
 
 def list_to_map(input_list):
@@ -14,7 +15,18 @@ def print_tool_call(printer, args, result):
     printer.indented_print(", ".join(map(str, args)), "→", result)
 
 def handle_tool_call(postfn, printer, attempt_id, call):
-    arguments = json.loads(call.function.arguments)
+    try:
+        arguments = json.loads(call.function.arguments)
+
+    except json.JSONDecodeError as e:
+        function_call_result_message = {
+            "role": "tool",
+            "content": "invalid json when calling tool",
+            "tool_call_id": call.id
+        }
+
+        return function_call_result_message
+
     args_norm = normalize_args(arguments)
 
     try:
@@ -68,7 +80,15 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
     # call the LLM repeatedly until it stops calling it's tool
     tool_call_counter = 0
     for count in range(0, msg_limit):
-        completion = completionfn(messages=messages, tools=tools)
+        # this retry logic is specifically for Qwen 3
+        for _ in range(3):
+            try:
+                completion = completionfn(messages=messages, tools=tools)
+                break
+
+            except BadRequestError as e:
+                print(e)
+                print("retrying")
 
         response = completion.choices[0]
         message = response.message.content
@@ -95,7 +115,6 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
                              "content": message})
 
             return (messages, tool_call_counter)
-        
+
     # LLM ran out of messages
     raise MsgLimitException("LLM ran out of messages.")
-
