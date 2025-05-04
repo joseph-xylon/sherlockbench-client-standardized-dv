@@ -55,9 +55,14 @@ def parse_args():
 def load_provider_config(provider):
     """Load configuration for the specified provider."""
     config_raw = load_config("resources/config.yaml")
+
+    # only this provider
     config_non_sensitive = {k: v for k, v in config_raw.items() if k != "providers"} | config_raw["providers"][provider]
+
+    # add credentials
     config = config_non_sensitive | load_config("resources/credentials.yaml")
-    return config
+
+    return config_non_sensitive, config
 
 def handle_list_command(config):
     """Handle the 'list' command to show available problem sets."""
@@ -91,8 +96,12 @@ def resume_failed_run(config, cursor, run_id, args):
     print(f"\n### SYSTEM: Found interrupted run with id: {run_id}")
 
     # Handle resume options
-    if args.resume == "retry" and attempt_id:
-        if not handle_retry_attempt(config, run_id, attempt_id):
+    if args.resume == "retry":
+        print(f"\n### SYSTEM: Attempting to reset failed attempt: {attempt_id}")
+        reset_success = reset_attempt(config, run_id, attempt_id)
+
+        if not reset_success:
+            print("\n### SYSTEM ERROR: Failed to reset attempt, exiting.")
             sys.exit(1)
 
     elif args.resume == "skip":
@@ -107,16 +116,6 @@ def resume_failed_run(config, cursor, run_id, args):
     print(f"Resuming {run_type} benchmark with run-id: {run_id}")
     
     return run_id, run_type, benchmark_version, attempts
-
-def handle_retry_attempt(config, run_id, attempt_id):
-    """Reset a failed attempt on the server for retry."""
-    print(f"\n### SYSTEM: Attempting to reset failed attempt: {attempt_id}")
-    reset_success = reset_attempt(config, run_id, attempt_id)
-
-    if not reset_success:
-        print("\n### SYSTEM ERROR: Failed to reset attempt, exiting.")
-        return False
-    return True
 
 def process_remaining_attempts(cursor, run_id, failure_info, failed_attempt, resume_mode):
     """Process the list of attempts and filter out completed or skipped ones."""
@@ -146,10 +145,10 @@ def process_remaining_attempts(cursor, run_id, failure_info, failed_attempt, res
     
     return attempts
 
-def start_new_run(config, cursor, args, provider, is_uuid, run_id):
+def start_new_run(config_non_sensitive, cursor, args, provider, is_uuid, run_id):
     """Start a new benchmark run."""
-    subset = config.get("subset")  # none if key is missing
-    post_data = {"client-id": f"{provider}/{config['model']}"}
+    subset = config_non_sensitive.get("subset")  # none if key is missing
+    post_data = {"client-id": f"{provider}/{config_non_sensitive['model']}"}
 
     if subset:
         post_data["subset"] = subset
@@ -163,14 +162,16 @@ def start_new_run(config, cursor, args, provider, is_uuid, run_id):
         post_data["problem-set"] = args.arg
     
     run_id, run_type, benchmark_version, attempts = destructure(
-        post(config['base-url'], None, "start-run", post_data),
+        post(config_non_sensitive['base-url'], None, "start-run", post_data),
         "run-id", "run-type", "benchmark-version", "attempts"
     )
 
     print(f"Starting {run_type} benchmark with run-id: {run_id}")
 
+    config_non_sensitive["run_type"] = run_type
+
     # Create the run table entry (only for new runs, not resuming)
-    q.create_run(cursor, config, run_id, benchmark_version)
+    q.create_run(cursor, config_non_sensitive, run_id, benchmark_version)
     
     return run_id, run_type, benchmark_version, attempts
 
@@ -187,7 +188,7 @@ def start_run(provider):
     args = parse_args()
     
     # Load configuration
-    config = load_provider_config(provider)
+    config_non_sensitive, config = load_provider_config(provider)
 
     # Handle the "list" argument
     if args.arg == "list":
@@ -207,7 +208,7 @@ def start_run(provider):
         run_id, run_type, benchmark_version, attempts = resume_failed_run(config, cursor, run_id, args)
     else:
         # Starting a new run
-        run_id, run_type, benchmark_version, attempts = start_new_run(config, cursor, args, provider, is_uuid, run_id)
+        run_id, run_type, benchmark_version, attempts = start_new_run(config_non_sensitive, cursor, args, provider, is_uuid, run_id)
     
     # Update config with important run metadata
     config["run_type"] = run_type
@@ -227,15 +228,13 @@ def complete_run(postfn, db_conn, cursor, run_id, start_time, total_call_count, 
 
     # print the results
     print("\n### SYSTEM: run complete for model `" + config["model"] + "`.")
-    print("Final score:", score["numerator"], "/", score["denominator"])
-    print("Percent:", percent)
+    print(f"Final score: {score['numerator']}/{score['denominator']} ({percent / 100:.0%})")
     
     # Calculate and display pass@k if we have multiple attempts per problem
     pass_at_k, k, problems_passed, total_problems = q.calculate_pass_at_k(cursor, run_id)
     
     if k > 1:  # Only display pass@k if we have multiple attempts per problem
-        print(f"\nPass@{k} score: {problems_passed}/{total_problems} ({pass_at_k:.2%})")
-        print(f"This means {problems_passed} out of {total_problems} problems had at least one successful attempt out of {k} tries.")
+        print(f"\nPass@{k} score: {problems_passed}/{total_problems} ({pass_at_k:.0%})")
     
     # Why do database libraries require so much boilerplate?
     db_conn.commit()
