@@ -80,31 +80,26 @@ def resume_failed_run(config, cursor, run_id, args):
     failed_run = q.get_failed_run(cursor, run_id)
     assert failed_run
 
-    print(f"\n### SYSTEM: Found interrupted run with id: {run_id}")
-
-    # Extract key values using destructure
     failure_info, benchmark_version, run_config = destructure(
         failed_run, "failure_info", "benchmark_version", "config"
     )
     
-    # Get the failed attempt from the failure info
     failed_attempt = failure_info["current_attempt"]
-    assert failed_attempt
-
     attempt_id = failed_attempt["attempt-id"]
+    run_type = run_config["run_type"]
+
+    print(f"\n### SYSTEM: Found interrupted run with id: {run_id}")
 
     # Handle resume options
     if args.resume == "retry" and attempt_id:
         if not handle_retry_attempt(config, run_id, attempt_id):
             sys.exit(1)
+
     elif args.resume == "skip":
         print(f"\n### SYSTEM: Will skip failed attempt: {attempt_id}")
 
     # Update config with info from the failed run
     config.update(run_config)
-
-    # Get information about the run
-    run_type = run_config.get("run_type", "unknown")
 
     # Get and process remaining attempts
     attempts = process_remaining_attempts(cursor, run_id, failure_info, failed_attempt, args.resume)
@@ -206,11 +201,6 @@ def start_run(provider):
     is_uuid = is_valid_uuid(args.arg)
     run_id = args.arg if is_uuid else None
     
-    # Variables used across different execution paths
-    attempts = None
-    benchmark_version = None
-    run_type = None
-    
     # Handle resuming a failed run or starting a new one
     if is_uuid and args.resume:
         # Resuming a failed run
@@ -239,6 +229,13 @@ def complete_run(postfn, db_conn, cursor, run_id, start_time, total_call_count, 
     print("\n### SYSTEM: run complete for model `" + config["model"] + "`.")
     print("Final score:", score["numerator"], "/", score["denominator"])
     print("Percent:", percent)
+    
+    # Calculate and display pass@k if we have multiple attempts per problem
+    pass_at_k, k, problems_passed, total_problems = q.calculate_pass_at_k(cursor, run_id)
+    
+    if k > 1:  # Only display pass@k if we have multiple attempts per problem
+        print(f"\nPass@{k} score: {problems_passed}/{total_problems} ({pass_at_k:.2%})")
+        print(f"This means {problems_passed} out of {total_problems} problems had at least one successful attempt out of {k} tries.")
     
     # Why do database libraries require so much boilerplate?
     db_conn.commit()
