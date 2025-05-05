@@ -18,7 +18,7 @@ def create_completion(client, **kwargs):
         **kwargs
     )
 
-def investigate_and_verify(postfn, completionfn, config, attempt_id, run_id, cursor):
+def investigate_and_verify(postfn, completionfn, config, attempt, run_id, cursor):
     attempt_id, arg_spec, test_limit = destructure(attempt, "attempt-id", "arg-spec", "test-limit")
 
     start_time = datetime.now()
