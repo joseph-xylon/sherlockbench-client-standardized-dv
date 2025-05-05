@@ -10,6 +10,9 @@ def remove_think_blocks(text: str) -> str:
 
     For Qwen as-per their recommendations: https://huggingface.co/Qwen/Qwen3-235B-A22B
     """
+    if text is None:
+        return text
+    
     # re.DOTALL makes '.' match newlines as well
     pattern = r"<think>.*?</think>"
     return re.sub(pattern, "", text, flags=re.DOTALL)
