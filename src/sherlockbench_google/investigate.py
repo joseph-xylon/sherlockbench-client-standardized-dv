@@ -62,9 +62,7 @@ def get_text_from_completion(obj_list):
     return result
 
 
-def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec):
-    msg_limit = config["msg-limit"]
-
+def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec, test_limit):
     mapped_args = generate_schema(arg_spec)
     required_args = list(mapped_args.keys())
     function = types.FunctionDeclaration(
@@ -81,7 +79,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
 
     # call the LLM repeatedly until it stops calling it's tool
     tool_call_counter = 0
-    for count in range(0, msg_limit):
+    for _ in range(0, test_limit + 5):  # the primary limit is on tool calls. This is just a failsafe
         # sometimes gemini-2.5-pro returns None
         attempts = 0
         for _ in range(3):
@@ -115,5 +113,4 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
 
             return (messages, tool_call_counter)
 
-    # LLM ran out of messages
-    raise MsgLimitException("LLM ran out of messages.")
+    raise MsgLimitException("Investigation loop overrun.")

@@ -46,7 +46,6 @@ A `resources/config.yaml` should look like this (uncomment sections as appropria
 # the base URL of the SherlockBench API
 base-url: "http://0.0.0.0:3000/api/"
 #base-url: "https://api.sherlockbench.com/api/"
-msg-limit: 50
 
 providers:
   openai:

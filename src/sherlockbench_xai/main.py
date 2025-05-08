@@ -9,8 +9,6 @@ from .verify import verify
 from datetime import datetime
 import psycopg2
 
-msg_limit = 50
-
 def create_completion(client, **kwargs):
     """closure to pre-load the model"""
     return client.chat.completions.create(
@@ -29,7 +27,8 @@ def investigate_and_verify(postfn, completionfn, config, attempt, run_id, cursor
     printer.print("\n### SYSTEM: interrogating function with args", arg_spec)
 
     messages = make_initial_messages(test_limit)
-    messages, tool_call_count = investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec)
+    messages, tool_call_count = investigate(config, postfn, completionfn, messages,
+                                            printer, attempt_id, arg_spec, test_limit)
 
     printer.print("\n### SYSTEM: verifying function with args", arg_spec)
     verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id)

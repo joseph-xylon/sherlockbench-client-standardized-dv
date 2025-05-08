@@ -42,7 +42,7 @@ def handle_tool_call(postfn, printer, attempt_id, call):
 
     response = postfn("test-function", {"attempt-id": attempt_id,
                                         "args": args_norm})
-    
+
     # Handle case where the output key is missing
     fnoutput = response.get("output", "Error calling tool")
 
@@ -54,9 +54,7 @@ def handle_tool_call(postfn, printer, attempt_id, call):
 
     return function_call_result_message
 
-def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec):
-    msg_limit = config["msg-limit"]
-
+def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec, test_limit):
     mapped_args = list_to_map(arg_spec)
     tools = [
         {
@@ -72,7 +70,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
 
     # call the LLM repeatedly until it stops calling it's tool
     tool_call_counter = 0
-    for count in range(0, msg_limit):
+    for _ in range(0, test_limit + 5):  # the primary limit is on tool calls. This is just a failsafe
         #pprint(messages)
         completion = completionfn(messages=messages, tools=tools)
 
@@ -80,25 +78,25 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
 
         printer.print("\n--- LLM ---")
         printer.indented_print(message)
-        
+
         if tool_calls:
             printer.print("\n### SYSTEM: calling tool")
             # Add thinking block for models with +thinking suffix
             content_blocks = []
-            
+
             if thinking:
                 # Convert the ThinkingBlock object to a dict for the API
                 content_blocks.append({"type": "thinking", "thinking": thinking.thinking, "signature": thinking.signature})
-            
+
             if redacted_thinking:
                 # Handle redacted thinking block
                 content_blocks.append({"type": "redacted_thinking"})
-                
+
             if message is not None:
                 content_blocks.append({"type": "text", "text": message})
-                
+
             content_blocks.extend(tool_calls)
-            
+
             messages.append({"role": "assistant", "content": content_blocks})
 
             tool_call_user_message = {
@@ -116,23 +114,22 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
         # if it didn't call the tool we can move on to verifications
         else:
             printer.print("\n### SYSTEM: The tool was used", tool_call_counter, "times.")
-            
+
             content_blocks = []
-            
+
             if thinking:
                 # Convert the ThinkingBlock object to a dict for the API
                 content_blocks.append({"type": "thinking", "thinking": thinking.thinking, "signature": thinking.signature})
-            
+
             if redacted_thinking:
                 # Handle redacted thinking block
                 content_blocks.append({"type": "redacted_thinking"})
-                
+
             if message is not None:
                 content_blocks.append({"type": "text", "text": message})
-            
+
             messages.append({"role": "assistant", "content": content_blocks})
 
             return (messages, tool_call_counter)
-        
-    # LLM ran out of messages
-    raise MsgLimitException("LLM ran out of messages.")
+
+    raise MsgLimitException("Investigation loop overrun.")

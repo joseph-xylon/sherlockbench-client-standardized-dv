@@ -43,7 +43,8 @@ def investigate_and_verify(postfn, completionfn, config, attempt, run_id, cursor
     printer.print("\n### SYSTEM: interrogating function with args", arg_spec)
 
     messages = make_initial_message(test_limit)
-    messages, tool_call_count = investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec)
+    messages, tool_call_count = investigate(config, postfn, completionfn, messages,
+                                            printer, attempt_id, arg_spec, test_limit)
 
     printer.print("\n### SYSTEM: verifying function with args", arg_spec)
     verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id)

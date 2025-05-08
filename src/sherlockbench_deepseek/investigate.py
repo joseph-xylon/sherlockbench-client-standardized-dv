@@ -38,9 +38,7 @@ class MsgLimitException(Exception):
     """When the LLM uses too many messages."""
     pass
 
-def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec):
-    msg_limit = config["msg-limit"]
-
+def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec, test_limit):
     mapped_args = list_to_map(arg_spec)
     tools = [
         {
@@ -60,7 +58,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
 
     # call the LLM repeatedly until it stops calling it's tool
     tool_call_counter = 0
-    for count in range(0, msg_limit):
+    for _ in range(0, test_limit + 5):  # the primary limit is on tool calls. This is just a failsafe
         completion = completionfn(messages=messages, tools=tools)
 
         response = completion.choices[0]
@@ -88,7 +86,5 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
                              "content": message})
 
             return (messages, tool_call_counter)
-        
-    # LLM ran out of messages
-    raise MsgLimitException("LLM ran out of messages.")
 
+    raise MsgLimitException("Investigation loop overrun.")
