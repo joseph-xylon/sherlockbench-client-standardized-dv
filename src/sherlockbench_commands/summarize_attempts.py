@@ -8,6 +8,23 @@ from collections import defaultdict
 from sherlockbench_client.main import load_config
 from sherlockbench_client.run_utils import is_valid_uuid
 
+def are_totals_equal(data):
+    """
+    Check if the 'total' value is the same for all dictionaries in a list.
+
+    Args:
+        data (list): A list of dictionaries, each containing a 'total' key.
+
+    Returns:
+        $total if all values are equal, False otherwise.
+    """
+    assert data
+
+    first_total = data[0].get('total')  # Get the 'total' value from the first dictionary
+    if all(d.get('total') == first_total for d in data):
+        return first_total
+    else:
+        return False
 
 def get_attempt_summary(cursor, run_ids):
     """
@@ -170,7 +187,6 @@ def main():
             sorted_data = sorted(sorted_data, key=lambda x: x["success_rate"], reverse=True)
             
             grand_total = total_success + total_failure
-            overall_success_rate = total_success / grand_total * 100 if grand_total > 0 else 0
             
             # Output as CSV if requested
             if output_csv:
@@ -184,10 +200,10 @@ def main():
                         row["success"],
                         row["failure"],
                         row["total"],
-                        f"{row['success_rate']:.2f}%"
+                        f"{row['success_rate']:.0f}%"
                     ])
                 
-                writer.writerow(["TOTAL", total_success, total_failure, grand_total, f"{overall_success_rate:.2f}%"])
+                writer.writerow(["TOTAL", total_success, total_failure, grand_total, ""])
                 
                 print(output.getvalue())
             else:
@@ -198,7 +214,7 @@ def main():
                 print("-" * 85)
                 
                 for row in sorted_data:
-                    print("{:<40} {:>10} {:>10} {:>10} {:>9.2f}%".format(
+                    print("{:<40} {:>10} {:>10} {:>10} {:>9.0f}%".format(
                         row["function_name"], 
                         row["success"], 
                         row["failure"], 
@@ -207,9 +223,17 @@ def main():
                     ))
                 
                 print("-" * 85)
-                print("{:<40} {:>10} {:>10} {:>10} {:>9.2f}%".format(
-                    "TOTAL", total_success, total_failure, grand_total, overall_success_rate
+                print("{:<40} {:>10} {:>10} {:>10} {:>10}".format(
+                    "TOTAL", total_success, total_failure, grand_total, ""
                 ))
+
+                print()
+                print(f"Over-all score: {100 / grand_total * total_success:.0f}%")
+                equal_per_problem = are_totals_equal(sorted_data)
+                if equal_per_problem:
+                    passed_once = sum(1 for d in sorted_data if d.get('success', 0) > 0)
+                    print(f"pass@{equal_per_problem}: {100 / len(sorted_data) * passed_once:.0f}%")
+
         else:
             print("\nNo attempts found for the specified run(s).")
         
