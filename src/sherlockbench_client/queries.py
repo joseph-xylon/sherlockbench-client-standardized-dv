@@ -5,7 +5,7 @@ import uuid
 from pprint import pprint
 
 
-def create_run(cursor, config_non_sensitive, run_id, benchmark_version):
+def create_run(cursor, config_non_sensitive, run_id, benchmark_version, label=None):
     start_time = datetime.now()
     run_data = {"id": run_id,
                 "model_identifier": config_non_sensitive["model"],
@@ -13,6 +13,10 @@ def create_run(cursor, config_non_sensitive, run_id, benchmark_version):
                 "config": json.dumps(config_non_sensitive),
                 "datetime_start": start_time.strftime('%Y-%m-%d %H:%M:%S')
                 }
+
+    # Add label if provided
+    if label:
+        run_data["label"] = label
 
     runs = Table("runs")
     insert_query = Query.into(runs).columns(*run_data.keys()).insert(*run_data.values())

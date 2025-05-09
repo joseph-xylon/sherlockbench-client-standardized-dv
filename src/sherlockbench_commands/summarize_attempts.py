@@ -6,7 +6,7 @@ from pypika import Query, Table, functions
 import sys
 from collections import defaultdict
 from sherlockbench_client.main import load_config
-from sherlockbench_client.run_utils import is_valid_uuid
+from sherlockbench_client.run_api import is_valid_uuid
 
 def are_totals_equal(data):
     """
