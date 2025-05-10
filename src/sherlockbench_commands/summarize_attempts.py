@@ -78,7 +78,7 @@ def get_attempt_summary(cursor, run_ids):
 
 def get_run_ids_by_label(cursor, labels):
     """
-    Get run IDs that have the specified labels.
+    Get run IDs that have any of the specified labels.
 
     Args:
         cursor: Database cursor
@@ -87,16 +87,16 @@ def get_run_ids_by_label(cursor, labels):
     Returns:
         list: List of run IDs that match the labels
     """
-    runs = Table("runs")
     run_ids = []
 
-    query = (
-        Query.from_(runs)
-        .select(runs.id)
-        .where(runs.label.isin(labels))
-    )
+    # Use native SQL query with array overlap operator for better compatibility
+    # The && operator checks if there's any overlap between the labels arrays
+    query_str = """
+    SELECT id FROM runs
+    WHERE labels && ARRAY[{}]
+    """.format(', '.join([f"'{label}'" for label in labels]))
 
-    cursor.execute(str(query))
+    cursor.execute(query_str)
     results = cursor.fetchall()
 
     for result in results:

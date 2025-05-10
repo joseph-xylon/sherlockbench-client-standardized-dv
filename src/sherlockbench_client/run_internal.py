@@ -1,25 +1,6 @@
 from .main import load_config, destructure, post, get
 from . import queries as q
-import argparse
 import sys
-
-def parse_args():
-    """Parse command line arguments for the SherlockBench run."""
-    parser = argparse.ArgumentParser(description="Run SherlockBench with a required argument.")
-    parser.add_argument("arg", nargs="?", help="The id of an existing run, or the id of a problem-set. Use 'list' to see available problem sets.")
-    parser.add_argument("--attempts-per-problem", type=int, help="Number of attempts per problem")
-    parser.add_argument("--resume", choices=["skip", "retry"], help="How to handle resuming from a failed run: 'skip' the failed attempt, or 'retry' it")
-    parser.add_argument("--label", type=str, help="Optional label for this run (e.g., 'baseline', 'experiment', 'keeper')")
-
-    args = parser.parse_args()
-
-    # Check if arg is missing and print usage
-    if args.arg is None:
-        parser.print_help()
-        print("\nTip: Use 'list' as the argument to see available problem sets.")
-        sys.exit(1)
-
-    return args
 
 def load_provider_config(provider):
     """Load configuration for the specified provider."""
@@ -139,13 +120,13 @@ def start_new_run(config_non_sensitive, cursor, args, provider, is_uuid, run_id)
 
     config_non_sensitive["run_type"] = run_type
 
-    # Add label to config if provided
-    label = args.label
-    if label:
-        print(f"This run will be labeled: {label}")
+    # Add labels to config if provided
+    labels = args.labels
+    if labels:
+        print(f"This run will have labels: {', '.join(labels)}")
 
     # Create the run table entry (only for new runs, not resuming)
-    q.create_run(cursor, config_non_sensitive, run_id, benchmark_version, label)
+    q.create_run(cursor, config_non_sensitive, run_id, benchmark_version, labels)
 
     return run_id, run_type, benchmark_version, attempts
 

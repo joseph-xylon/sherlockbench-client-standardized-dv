@@ -5,7 +5,7 @@ import uuid
 from pprint import pprint
 
 
-def create_run(cursor, config_non_sensitive, run_id, benchmark_version, label=None):
+def create_run(cursor, config_non_sensitive, run_id, benchmark_version, labels=None):
     start_time = datetime.now()
     run_data = {"id": run_id,
                 "model_identifier": config_non_sensitive["model"],
@@ -14,13 +14,25 @@ def create_run(cursor, config_non_sensitive, run_id, benchmark_version, label=No
                 "datetime_start": start_time.strftime('%Y-%m-%d %H:%M:%S')
                 }
 
-    # Add label if provided
-    if label:
-        run_data["label"] = label
+    # Add labels if provided
+    if labels:
+        run_data["labels"] = labels  # This should be an array already
 
     runs = Table("runs")
-    insert_query = Query.into(runs).columns(*run_data.keys()).insert(*run_data.values())
-    cursor.execute(str(insert_query))
+
+    # We need to use a raw SQL query here since pypika doesn't handle array types well
+    if labels:
+        columns = ", ".join(run_data.keys())
+        placeholders = ", ".join(["%s"] * len(run_data))
+
+        # Insert with labels array
+        query = f"INSERT INTO runs ({columns}) VALUES ({placeholders})"
+        cursor.execute(query, list(run_data.values()))
+    else:
+        # Use pypika for the simpler case without labels
+        insert_query = Query.into(runs).columns(*run_data.keys()).insert(*run_data.values())
+        cursor.execute(str(insert_query))
+
     cursor.connection.commit()
 
 def get_failed_run(cursor, run_id):
