@@ -52,6 +52,9 @@ def run_benchmark(config, db_conn, cursor, run_id, attempts, start_time):
     def completionfn(**kwargs):
         if "temperature" in config:
             kwargs["temperature"] = config['temperature']
+
+        if "extra_body" in config:
+            kwargs["extra_body"] = config['extra_body']
             
         if "max_tokens" in config:
             kwargs["max_tokens"] = config['max_tokens']
