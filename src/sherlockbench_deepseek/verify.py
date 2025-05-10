@@ -23,8 +23,8 @@ def verify(config, postfn, completionfn, messages, printer, attempt_id):
             print("Caught a LengthFinishReasonError!")
             print("Completion:", e.completion)
 
-            # well it failed so we break
-            break
+            # well it failed so we return False
+            return False
 
         response = completion.choices[0]
 
@@ -35,8 +35,8 @@ def verify(config, postfn, completionfn, messages, printer, attempt_id):
             print("Caught a json.JSONDecodeError!")
             print(e)
 
-            # well it failed so we break
-            break
+            # well it failed so we return False
+            return False
 
         printer.print("\n--- LLM ---")
         printer.indented_print(thoughts, "\n")
