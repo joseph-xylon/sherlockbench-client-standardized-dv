@@ -26,9 +26,17 @@ def verify(config, postfn, completionfn, messages, printer, attempt_id):
             # well it failed so we break
             break
 
-        response = completion.choices[0]
+        try:
+            response = completion.choices[0]
 
-        thoughts, expected_output = destructure(json.loads(response.message.content), "thoughts", "expected_output")
+            thoughts, expected_output = destructure(json.loads(response.message.content), "thoughts", "expected_output")
+
+        except json.decoder.JSONDecodeError as e:
+            print("Failed to decode JSON")
+            print("Error:", e)
+
+            # well it failed so we return False
+            return False
 
         printer.print("\n--- LLM ---")
         printer.indented_print(thoughts, "\n")
