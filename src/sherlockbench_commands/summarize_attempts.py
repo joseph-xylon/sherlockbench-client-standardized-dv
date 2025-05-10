@@ -114,10 +114,12 @@ def main():
     parser = argparse.ArgumentParser(description="Summarize attempt results by function name.")
     parser.add_argument("run_ids", nargs="+", help="UUID(s) of the run(s) to summarize")
     parser.add_argument("--csv", action="store_true", help="Output in CSV format for spreadsheets")
-    
+    parser.add_argument("--sort", action="store_true", help="Sort results by success rate (descending)")
+
     args = parser.parse_args()
     run_ids = args.run_ids
     output_csv = args.csv
+    sort_results = args.sort
     
     # Validate all run_ids are UUIDs
     invalid_uuids = []
@@ -183,8 +185,11 @@ def main():
                     "success_rate": success_rate
                 })
             
-            # Sort by success rate (descending)
-            sorted_data = sorted(sorted_data, key=lambda x: x["success_rate"], reverse=True)
+            # Sort by success rate if requested, otherwise sort by function_name
+            if sort_results:
+                sorted_data = sorted(sorted_data, key=lambda x: x["success_rate"], reverse=True)
+            else:
+                sorted_data = sorted(sorted_data, key=lambda x: x["function_name"])
             
             grand_total = total_success + total_failure
             
@@ -200,7 +205,7 @@ def main():
                         row["success"],
                         row["failure"],
                         row["total"],
-                        f"{row['success_rate']:.0f}%"
+                        f"{row['success_rate']:.0f}"
                     ])
                 
                 writer.writerow(["TOTAL", total_success, total_failure, grand_total, ""])
