@@ -108,8 +108,9 @@ def complete_run(postfn, db_conn, cursor, run_id, start_time, total_call_count, 
     q.save_run_result(cursor, run_id, start_time, score, percent, total_call_count)
 
     # print the results
-    print("\n### SYSTEM: run complete for model `" + config["model"] + "`.")
-    print(f"Final score: {score['numerator']}/{score['denominator']} ({percent / 100:.0%})")
+    print(f"\n### SYSTEM: run complete for model `{config["model"]}`.")
+    print(f"\nRun id: {run_id}")
+    print(f"\nFinal score: {score['numerator']}/{score['denominator']} ({percent / 100:.0%})")
 
     # Calculate and display pass@k if we have multiple attempts per problem
     pass_at_k, k, problems_passed, total_problems = q.calculate_pass_at_k(cursor, run_id)
