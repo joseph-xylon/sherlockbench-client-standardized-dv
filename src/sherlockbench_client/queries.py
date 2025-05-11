@@ -117,6 +117,15 @@ def add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count
     cursor.execute(str(insert_query))
     cursor.connection.commit()
 
+def fail_attempt(cursor, run_id, attempt_id):
+    attempt_data = {"id": attempt_id,
+                    "run_id": run_id,
+                    "result": False}
+
+    insert_query = Query.into(Table("attempts")).columns(*attempt_data.keys()).insert(*attempt_data.values())
+    cursor.execute(str(insert_query))
+    cursor.connection.commit()
+
 def add_problem_names(cursor, problem_names):
     """problem_names is a list of dicts, each containing 'id' and 'function_name'"""
     attempts = Table("attempts")

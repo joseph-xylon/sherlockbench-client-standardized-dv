@@ -57,6 +57,8 @@ def resume_failed_run(config, cursor, run_id, args):
     elif args.resume == "skip":
         print(f"\n### SYSTEM: Will skip failed attempt: {attempt_id}")
 
+        q.fail_attempt(cursor, run_id, attempt_id)
+
     # Update config with info from the failed run
     config.update(run_config)
 
