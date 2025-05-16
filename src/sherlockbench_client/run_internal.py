@@ -53,7 +53,9 @@ def resume_failed_run(config, cursor, run_id, args):
         print(f"\n### SYSTEM: Attempting to reset failed attempt: {attempt_id}")
         reset_success = reset_attempt(config, run_id, attempt_id)
 
-        if not reset_success:
+        if reset_success:
+            print(f"\n### SYSTEM: Successfully reset attempt {attempt_id}")
+        else:
             print("\n### SYSTEM ERROR: Failed to reset attempt, exiting.")
             sys.exit(1)
 
@@ -174,27 +176,14 @@ def reset_attempt(config, run_id, attempt_id):
         bool: True if the reset was successful, False otherwise
     """
     try:
-        # Call the reset-attempt API endpoint
-        print(f"\n### DEBUG: Calling reset-attempt API for run_id={run_id}, attempt_id={attempt_id}")
-
         response = post(config["base-url"],
                         str(run_id),
                         "developer/reset-attempt",
                         {"attempt-id": str(attempt_id)})
-
-        # Debug information about the response
-        print(f"\n### DEBUG: API response type: {type(response)}")
-        print(f"\n### DEBUG: API response content: {response}")
-
-        # Simple string check for success since we don't know the exact structure
-        if "success" in str(response).lower():
-            print(f"\n### SYSTEM: Successfully reset attempt {attempt_id}")
-            return True
-        else:
-            print(f"\n### SYSTEM ERROR: Failed to reset attempt. Response: {response}")
-            return False
-
+        
+        # Check for success in status key
+        return response.get("status") == "success"
+        
     except Exception as e:
         print(f"\n### SYSTEM ERROR: Failed to reset attempt: {str(e)}")
-        print(f"\n### DEBUG: Exception traceback: {traceback.format_exc()}")
         return False
