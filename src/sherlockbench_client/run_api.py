@@ -1,3 +1,4 @@
+import os
 from .main import load_config, destructure, post
 from . import queries as q
 from datetime import datetime
@@ -8,6 +9,7 @@ import traceback
 import sys
 import uuid
 from pprint import pprint
+from filelock import FileLock, Timeout
 from .run_internal import (
     handle_list_command,
     resume_failed_run,
@@ -139,61 +141,65 @@ def run_with_error_handling(provider, main_function):
                        It should take (config, db_conn, cursor, run_id, attempts, start_time)
                        and return (postfn, total_call_count, config) for run completion.
     """
-    config = None
-    db_conn = None
-    cursor = None
-    run_id = None
-    attempts = None
-    start_time = None
+
+    lock_path = f"/tmp/sherlockbench_client_{provider}.lock"
+    lock = FileLock(lock_path)
 
     try:
-        # Start the run
-        config, db_conn, cursor, run_id, attempts, start_time = start_run(provider)
+        lock.acquire(blocking=False)
+    except Timeout:
+        print("A run for this provider is already in-progress. Awaiting it's completion.")
+        print()
 
-        # Call the provider's main function, which should return info needed for completion
-        postfn, total_call_count, _ = main_function(config, db_conn, cursor, run_id, attempts, start_time)
+    with lock:
+        try:
+            # Start the run
+            config, db_conn, cursor, run_id, attempts, start_time = start_run(provider)
 
-        # Complete the run
-        complete_run(postfn, db_conn, cursor, run_id, start_time, total_call_count, config)
+            # Call the provider's main function, which should return info needed for completion
+            postfn, total_call_count, _ = main_function(config, db_conn, cursor, run_id, attempts, start_time)
 
-    except Exception as e:
-        # Capture error information
-        error_type = type(e).__name__
-        error_message = str(e)
-        trace_info = traceback.format_exc()
+            # Complete the run
+            complete_run(postfn, db_conn, cursor, run_id, start_time, total_call_count, config)
 
-        print(f"\n### SYSTEM ERROR: {error_type}: {error_message}")
+        except Exception as e:
+            # Capture error information
+            error_type = type(e).__name__
+            error_message = str(e)
+            trace_info = traceback.format_exc()
 
-        # Save error information to database if we have a connection
-        if db_conn and cursor and run_id:
-            print("attempts: ", attempts)
+            print(f"\n### SYSTEM ERROR: {error_type}: {error_message}")
 
-            error_info = {
-                "error_type": error_type,
-                "error_message": error_message,
-                "traceback": trace_info
-            }
+            # Save error information to database if we have a connection
+            if db_conn and cursor and run_id:
+                print("attempts: ", attempts)
 
-            try:
-                # Get the current attempt from our global tracker
-                current_attempt = get_current_attempt()
+                error_info = {
+                    "error_type": error_type,
+                    "error_message": error_message,
+                    "traceback": trace_info
+                }
 
-                save_run_failure(cursor, run_id, attempts, current_attempt, error_info)
-                db_conn.commit()
-
-                # Provide resumption instructions to the user
-                print("\n### SYSTEM INFO: Run failed. To resume this run, use one of the following:")
-                print(f"  sherlockbench_{provider} {run_id} --resume=skip   # Skip the failed attempt")
-                print(f"  sherlockbench_{provider} {run_id} --resume=retry  # Retry the failed attempt")
-
-            except Exception as save_error:
-                print(f"\n### SYSTEM ERROR: Failed to save error information: {save_error}")
-            finally:
                 try:
-                    cursor.close()
-                    db_conn.close()
-                except:
-                    pass
+                    # Get the current attempt from our global tracker
+                    current_attempt = get_current_attempt()
 
-        # Re-raise the exception to exit with error
-        raise
+                    save_run_failure(cursor, run_id, attempts, current_attempt, error_info)
+                    db_conn.commit()
+
+                    # Provide resumption instructions to the user
+                    print("\n### SYSTEM INFO: Run failed. To resume this run, use one of the following:")
+                    print(f"  sherlockbench_{provider} {run_id} --resume=skip   # Skip the failed attempt")
+                    print(f"  sherlockbench_{provider} {run_id} --resume=retry  # Retry the failed attempt")
+
+                except Exception as save_error:
+                    print(f"\n### SYSTEM ERROR: Failed to save error information: {save_error}")
+                finally:
+                    try:
+                        cursor.close()
+                        db_conn.close()
+                    except:
+                        pass
+
+            # Re-raise the exception to exit with error
+            raise

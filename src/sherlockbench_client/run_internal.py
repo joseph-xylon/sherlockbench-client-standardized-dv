@@ -102,7 +102,8 @@ def process_remaining_attempts(cursor, run_id, failure_info, failed_attempt, res
 def start_new_run(config_non_sensitive, cursor, args, provider, is_uuid, run_id):
     """Start a new benchmark run."""
     subset = config_non_sensitive.get("subset")  # none if key is missing
-    post_data = {"client-id": f"{provider}/{config_non_sensitive['model']}"}
+    model = config_non_sensitive['model']
+    post_data = {"client-id": f"{provider}/{model}"}
 
     if subset:
         post_data["subset"] = subset
@@ -120,7 +121,8 @@ def start_new_run(config_non_sensitive, cursor, args, provider, is_uuid, run_id)
         "run-id", "run-type", "benchmark-version", "attempts"
     )
 
-    print(f"Starting {run_type} benchmark with run-id: {run_id}")
+    print(f"Starting {run_type} benchmark with model {model}")
+    print(f"Run id: {run_id}")
 
     config_non_sensitive["run_type"] = run_type
 
