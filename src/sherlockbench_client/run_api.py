@@ -110,7 +110,7 @@ def complete_run(postfn, db_conn, cursor, run_id, start_time, total_call_count, 
     q.save_run_result(cursor, run_id, start_time, score, percent, total_call_count)
 
     # print the results
-    print(f"\n### SYSTEM: run complete for model `{config["model"]}`.")
+    print(f"\n### SYSTEM: run complete for model `{config['model']}`.")
     print(f"\nRun id: {run_id}")
     print(f"\nFinal score: {score['numerator']}/{score['denominator']} ({percent / 100:.0%})")
 
