@@ -1,4 +1,5 @@
 import time
+import sys
 import yaml
 import copy
 import requests
@@ -36,8 +37,8 @@ def post(base_url, run_id, path, data):
         print(response.json().get("error", "no error"))
 
         if response.status_code == 400 and "error" in response.json():
-            return {"output": response.json()["error"]}
-        
+            sys.exit()
+
     return response.json()
 
 def get(base_url, path):
