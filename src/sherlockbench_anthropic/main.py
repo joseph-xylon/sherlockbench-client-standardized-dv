@@ -14,7 +14,7 @@ def create_completion(client, model, **kwargs):
 
     thinkingsuffix="+thinking"
     if model.endswith(thinkingsuffix):
-        return client.messages.create(
+        return client.with_options(timeout=1200).messages.create(
             model=model.removesuffix(thinkingsuffix),
             max_tokens=20000,
             thinking={
