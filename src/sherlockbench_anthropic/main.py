@@ -16,10 +16,13 @@ def create_completion(client, model, **kwargs):
     if model.endswith(thinkingsuffix):
         return client.with_options(timeout=1200).messages.create(
             model=model.removesuffix(thinkingsuffix),
-            max_tokens=20000,
+            max_tokens=30000,
             thinking={
                 "type": "enabled",
                 "budget_tokens": 16000
+            },
+            extra_headers={
+                "anthropic-beta": "interleaved-thinking-2025-05-14"
             },
             **kwargs
         )
