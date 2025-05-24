@@ -37,7 +37,11 @@ def post(base_url, run_id, path, data):
         print(response.json().get("error", "no error"))
 
         if response.status_code == 400 and "error" in response.json():
-            sys.exit()
+            if "Invalid exam set:" in response.json()["error"]:
+                sys.exit()
+
+            return {"output": response.json()["error"]}
+
 
     return response.json()
 
