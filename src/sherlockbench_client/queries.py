@@ -104,7 +104,7 @@ def get_completed_attempts(cursor, run_id):
     # Extract the attempt IDs
     return [str(result[0]) for result in results]
 
-def add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count, printer, completionfn, start_api_calls, attempt_id):
+def add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count, printer, completionfn, start_api_calls, attempt_id, meta=None):
     attempt_data = {"id": attempt_id,
                     "run_id": run_id,
                     "result": verification_result,
@@ -112,6 +112,9 @@ def add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count
                     "tool_calls": tool_call_count,
                     "complete_log": printer.retrieve(),
                     "api_calls": completionfn.total_call_count - start_api_calls}
+
+    if meta is not None:
+        attempt_data["meta"] = json.dumps(meta)
 
     insert_query = Query.into(Table("attempts")).columns(*attempt_data.keys()).insert(*attempt_data.values())
     cursor.execute(str(insert_query))
