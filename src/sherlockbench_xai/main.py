@@ -60,6 +60,3 @@ def two_phase():
 def three_phase():
     # Use the centralized error handling function
     run_with_error_handling("xai", partial(run_benchmark, investigate_decide_verify))
-
-if __name__ == "__main__":
-    main()
