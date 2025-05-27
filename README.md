@@ -88,8 +88,8 @@ anthropic:
   xai:
     rate-limit: 10
 
-    model: "grok-3-beta"
-    #model: "grok-3-mini-beta"
+    model: "grok-3"
+    #model: "grok-3-mini"
     #reasoning_effort: "high"  # high or low
 
   deepseek:
