@@ -29,7 +29,7 @@ def print_tool_call(printer, args, result):
     if isinstance(result, str):
         result = result.encode('utf-8', 'replace').decode('utf-8')
 
-    printer.indented_print(", ".join(map(str, clean_args)), "→", result)
+    printer.indented_print("(" + ", ".join(map(str, clean_args)) + ")", "→", result)
 
 class ToolCallHandler:
     def __init__(self, postfn, printer, attempt_id):

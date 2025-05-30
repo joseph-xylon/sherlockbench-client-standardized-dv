@@ -70,6 +70,13 @@ anthropic:
     #model: "gemini-2.5-pro-preview-05-06"
     #temperature: 0.0
 
+  xai:
+    rate-limit: 10
+
+    model: "grok-3"
+    #model: "grok-3-mini"
+    #reasoning_effort: "high"  # high or low
+
   fireworks:
     rate-limit: 10
 
@@ -84,13 +91,6 @@ anthropic:
       top_p: 0.95
       top_k: 20
       min_p: 0
-
-  xai:
-    rate-limit: 10
-
-    model: "grok-3"
-    #model: "grok-3-mini"
-    #reasoning_effort: "high"  # high or low
 
   deepseek:
     rate-limit: 30

@@ -21,7 +21,7 @@ class MsgLimitException(Exception):
     pass
 
 def print_tool_call(printer, args, result):
-    printer.indented_print(", ".join(map(str, args)), "→", result)
+    printer.indented_print("(" + ", ".join(map(str, args)) + ")", "→", result)
 
 def parse_completion(content):
     #text = next((d["text"] for d in content if d.get("type") == "text"), None)

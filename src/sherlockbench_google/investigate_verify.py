@@ -28,7 +28,7 @@ def normalize_args(input_dict):
     return [input_dict[key] for key in sorted(input_dict.keys())]
 
 def print_tool_call(printer, args, result):
-    printer.indented_print(", ".join(map(str, args)), "→", result)
+    printer.indented_print("(" + ", ".join(map(str, args)) + ")", "→", result)
 
 def handle_tool_call(postfn, printer, attempt_id, call):
     arguments = call.args
