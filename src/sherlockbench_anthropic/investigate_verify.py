@@ -1,7 +1,11 @@
 from anthropic.types import TextBlock, ToolUseBlock, ThinkingBlock, RedactedThinkingBlock
 from pprint import pprint
+from sherlockbench_client import destructure, AccumulatingPrinter, q
 
 import json
+from datetime import datetime
+from .prompts import make_initial_message
+from .verify import verify
 
 def list_to_map(input_list):
     """assign arbritray keys to each argument and format it how Anthropic likes"""
@@ -133,3 +137,26 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
             return (messages, tool_call_counter)
 
     raise MsgLimitException("Investigation loop overrun.")
+
+def investigate_verify(postfn, completionfn, config, attempt, run_id, cursor):
+    attempt_id, arg_spec, test_limit = destructure(attempt, "attempt-id", "arg-spec", "test-limit")
+
+    start_time = datetime.now()
+    start_api_calls = completionfn.total_call_count
+
+    # setup the printer
+    printer = AccumulatingPrinter()
+
+    printer.print("\n### SYSTEM: interrogating function with args", arg_spec)
+
+    messages = make_initial_message(test_limit)
+    messages, tool_call_count = investigate(config, postfn, completionfn, messages,
+                                            printer, attempt_id, arg_spec, test_limit)
+
+    printer.print("\n### SYSTEM: verifying function with args", arg_spec)
+    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id)
+
+    time_taken = (datetime.now() - start_time).total_seconds()
+    q.add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count, printer, completionfn, start_api_calls, attempt_id)
+
+    return verification_result

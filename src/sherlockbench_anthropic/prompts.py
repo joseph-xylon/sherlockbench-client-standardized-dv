@@ -28,3 +28,17 @@ You no-longer have access to the tool because I am testing if you have got it ri
 
 Please respond in JSON with two keys: \"thoughts\" and \"expected_output\".
 expected_output should contain the output you expect from the function."""}
+
+def make_decision_messages(examples_text):
+    return [
+        {"role": "user", "content":
+         """You are a competent and alert chatbot. You will help to investigate a mystery function."""},
+        {"role": "user", "content":
+         f"""I have a mystery function and I want you to figure out what it does.
+
+Here are some examples of the function's input and output:
+
+{examples_text}
+
+Based on these examples, please determine what the function does and summarise."""}
+    ]
