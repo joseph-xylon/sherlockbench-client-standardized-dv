@@ -79,6 +79,21 @@ def get_text_from_completion(obj_list):
     :param obj_list: List of objects to process
     :return: Concatenated string of all .text properties
     """
+    # print(f"DEBUG: obj_list type: {type(obj_list)}")
+    # print(f"DEBUG: obj_list.candidates: {obj_list.candidates}")
+    # print(f"DEBUG: obj_list attributes: {dir(obj_list)}")
+    # print(f"DEBUG: obj_list.__dict__: {obj_list.__dict__}")
+    
+    if obj_list.candidates is None:
+        print("DEBUG: candidates is None")
+        raise RuntimeError("API returned None candidates")
+    
+    # print(f"DEBUG: obj_list.candidates[0]: {obj_list.candidates[0]}")
+    # print(f"DEBUG: obj_list.candidates[0].content: {obj_list.candidates[0].content}")
+    if obj_list.candidates[0].content is None:
+        print("DEBUG: content is None")
+        raise RuntimeError("API returned None content")
+    
     result = ""
     for obj in obj_list.candidates[0].content.parts:
         # Use getattr with a default value to avoid AttributeError
