@@ -45,10 +45,9 @@ def is_valid_uuid(uuid_string):
     uuid_pattern = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
     return bool(uuid_pattern.match(uuid_string))
 
-def start_run(provider):
+def start_run(provider, config_non_sensitive, config):
     """Various things to get the run started:
        - parse the args
-       - load the config
        - establish db connection
        - contact the server to start the run
        - add the run info to the db
@@ -68,9 +67,6 @@ def start_run(provider):
         parser.print_help()
         print("\nTip: Use 'sherlockbench_list' command to see available problem sets.")
         sys.exit(1)
-
-    # Load configuration
-    config_non_sensitive, config = load_provider_config(provider)
 
 
     # Connect to postgresql
@@ -138,6 +134,9 @@ def run_with_error_handling(provider, main_function):
                        and return (postfn, total_call_count, config) for run completion.
     """
 
+    # Load configuration before acquiring lock so changes are picked up
+    config_non_sensitive, config = load_provider_config(provider)
+
     lock_path = f"/tmp/sherlockbench_client_{provider}.lock"
     lock = FileLock(lock_path)
 
@@ -150,7 +149,7 @@ def run_with_error_handling(provider, main_function):
     with lock:
         try:
             # Start the run
-            config, db_conn, cursor, run_id, attempts, start_time = start_run(provider)
+            config, db_conn, cursor, run_id, attempts, start_time = start_run(provider, config_non_sensitive, config)
 
             # Call the provider's main function, which should return info needed for completion
             postfn, total_call_count, _ = main_function(config, db_conn, cursor, run_id, attempts, start_time)
