@@ -4,6 +4,17 @@ from .prompts import make_verification_message
 from sherlockbench_client import destructure, value_list_to_map
 from pprint import pprint
 
+def trim_to_braces(s: str) -> str:
+    """
+    Removes anything before the first '{' and after the last '}' in the string.
+    If either brace is missing, returns an empty string.
+    """
+    start = s.find('{')
+    end = s.rfind('}')
+    if start == -1 or end == -1 or start > end:
+        return ''
+    return s[start:end+1]
+
 def verify(config, postfn, completionfn, messages, printer, attempt_id):
     # for each verification
     while (v_data := postfn("next-verification", {"attempt-id": attempt_id})):
@@ -30,11 +41,7 @@ def verify(config, postfn, completionfn, messages, printer, attempt_id):
 
             try:
                 # Strip markdown code block markers if present
-                cleaned_response = response
-                if cleaned_response and cleaned_response.strip().startswith("```json"):
-                    cleaned_response = cleaned_response.strip()[7:].strip()
-                if cleaned_response and cleaned_response.strip().endswith("```"):
-                    cleaned_response = cleaned_response.strip()[:-3].strip()
+                cleaned_response = trim_to_braces(response)
                 
                 thoughts, expected_output = destructure(json.loads(cleaned_response), "thoughts", "expected_output")
                 break
