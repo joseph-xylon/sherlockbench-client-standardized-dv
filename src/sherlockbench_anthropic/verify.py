@@ -4,16 +4,25 @@ from .prompts import make_verification_message
 from sherlockbench_client import destructure, value_list_to_map
 from pprint import pprint
 
-def trim_to_braces(s: str) -> str:
+def last_brace_block(s: str) -> str:
     """
-    Removes anything before the first '{' and after the last '}' in the string.
-    If either brace is missing, returns an empty string.
+    Returns the last complete brace-enclosed block from the input string,
+    including any nested braces. Unmatched braces are ignored.
+    If no complete block exists, returns an empty string.
     """
-    start = s.find('{')
-    end = s.rfind('}')
-    if start == -1 or end == -1 or start > end:
-        return ''
-    return s[start:end+1]
+    stack = []
+    pairs = []
+    for i, c in enumerate(s):
+        if c == '{':
+            stack.append(i)
+        elif c == '}':
+            if stack:
+                start = stack.pop()
+                pairs.append((start, i))
+    if pairs:
+        start, end = pairs[-1]
+        return s[start:end+1]
+    return ''
 
 def verify(config, postfn, completionfn, messages, printer, attempt_id):
     # for each verification
@@ -40,8 +49,9 @@ def verify(config, postfn, completionfn, messages, printer, attempt_id):
             response = next((item.text for item in completion.content if isinstance(item, TextBlock)), None)
 
             try:
-                # Strip markdown code block markers if present
-                cleaned_response = trim_to_braces(response)
+                # Claude often includes loads of other text in addition to
+                # the JSON
+                cleaned_response = last_brace_block(response)
                 
                 thoughts, expected_output = destructure(json.loads(cleaned_response), "thoughts", "expected_output")
                 break
