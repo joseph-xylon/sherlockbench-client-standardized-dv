@@ -11,7 +11,6 @@ import uuid
 from pprint import pprint
 from filelock import FileLock, Timeout
 from .run_internal import (
-    handle_list_command,
     resume_failed_run,
     start_new_run,
     reset_attempt,
@@ -57,7 +56,7 @@ def start_run(provider):
     """
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Run SherlockBench with a required argument.")
-    parser.add_argument("arg", nargs="?", help="The id of an existing run, or the id of a problem-set. Use 'list' to see available problem sets.")
+    parser.add_argument("arg", nargs="?", help="The id of an existing run, or the id of a problem-set.")
     parser.add_argument("--attempts-per-problem", type=int, help="Number of attempts per problem")
     parser.add_argument("--resume", choices=["skip", "retry"], help="How to handle resuming from a failed run: 'skip' the failed attempt, or 'retry' it")
     parser.add_argument("--labels", nargs="+", help="Optional labels for this run (e.g., 'baseline', 'experiment', 'keeper')")
@@ -67,15 +66,12 @@ def start_run(provider):
     # Check if arg is missing and print usage
     if args.arg is None:
         parser.print_help()
-        print("\nTip: Use 'list' as the argument to see available problem sets.")
+        print("\nTip: Use 'sherlockbench_list' command to see available problem sets.")
         sys.exit(1)
 
     # Load configuration
     config_non_sensitive, config = load_provider_config(provider)
 
-    # Handle the "list" argument
-    if args.arg == "list":
-        handle_list_command(config)
 
     # Connect to postgresql
     db_conn = psycopg2.connect(config["postgres-url"])

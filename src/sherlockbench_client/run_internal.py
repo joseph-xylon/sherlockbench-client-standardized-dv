@@ -1,4 +1,4 @@
-from .main import load_config, destructure, post, get
+from .main import load_config, destructure, post
 from . import queries as q
 import sys
 
@@ -14,20 +14,6 @@ def load_provider_config(provider):
 
     return config_non_sensitive, config
 
-def handle_list_command(config):
-    """Handle the 'list' command to show available problem sets."""
-    response = get(config['base-url'], "problem-sets")
-    problem_sets = response.get('problem-sets', {})
-
-    print("Available problem sets:")
-    print("======================")
-
-    for category, problems in problem_sets.items():
-        print(f"\n{category}:")
-        for problem in problems:
-            print(f"  - {problem['name']} :: {problem['id']}")
-
-    sys.exit(0)
 
 def resume_failed_run(config, cursor, run_id, args):
     """Resume a previously failed run."""
