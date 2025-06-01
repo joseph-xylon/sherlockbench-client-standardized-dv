@@ -24,7 +24,7 @@ class MsgLimitException(Exception):
     """When the LLM uses too many messages."""
     pass
 
-def print_tool_call(printer, args, arg_spec, result):
+def format_tool_call(args, arg_spec, result):
     # Show strings in double-quotes
     fmt_args = list(
         map(
@@ -35,9 +35,9 @@ def print_tool_call(printer, args, arg_spec, result):
     )
 
     if len(fmt_args) > 1:
-        printer.indented_print("(" + ", ".join(map(str, fmt_args)) + ")", "→", result)
+        return f"({', '.join(map(str, fmt_args))}) → \"{result}\""
     else:
-        printer.indented_print(", ".join(map(str, fmt_args)), "→", result)
+        return f"{', '.join(map(str, fmt_args))} → \"{result}\""
 
 def parse_completion(content):
     #text = next((d["text"] for d in content if d.get("type") == "text"), None)
@@ -62,7 +62,7 @@ def handle_tool_call(postfn, printer, attempt_id, call, arg_spec):
     # Handle case where the output key is missing
     fnoutput = response.get("output", "Error calling tool")
 
-    print_tool_call(printer, args_norm, arg_spec, fnoutput)
+    printer.indented_print(format_tool_call(args_norm, arg_spec, fnoutput))
 
     function_call_result_message = {"type": "tool_result",
                                     "tool_use_id": call_id,

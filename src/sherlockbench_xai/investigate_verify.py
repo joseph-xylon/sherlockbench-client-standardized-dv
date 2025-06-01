@@ -15,7 +15,7 @@ def normalize_args(input_dict):
     """Converts a dict into a list of values, sorted by the alphabetical order of the keys."""
     return [input_dict[key] for key in sorted(input_dict.keys())]
 
-def print_tool_call(printer, args, arg_spec, result):
+def format_tool_call(args, arg_spec, result):
     # Show strings in double-quotes
     fmt_args = list(
         map(
@@ -26,9 +26,9 @@ def print_tool_call(printer, args, arg_spec, result):
     )
 
     if len(fmt_args) > 1:
-        printer.indented_print("(" + ", ".join(map(str, fmt_args)) + ")", "→", result)
+        return f"({', '.join(map(str, fmt_args))}) → \"{result}\""
     else:
-        printer.indented_print(", ".join(map(str, fmt_args)), "→", result)
+        return f"{', '.join(map(str, fmt_args))} → \"{result}\""
 
 def handle_tool_call(postfn, printer, attempt_id, call, arg_spec):
     arguments = json.loads(call.function.arguments)
@@ -38,7 +38,7 @@ def handle_tool_call(postfn, printer, attempt_id, call, arg_spec):
         fnoutput = postfn("test-function", {"attempt-id": attempt_id,
                                             "args": args_norm})["output"]
 
-        print_tool_call(printer, args_norm, arg_spec, fnoutput)
+        printer.indented_print(format_tool_call(args_norm, arg_spec, fnoutput))
 
         function_call_result_message = {
             "role": "tool",

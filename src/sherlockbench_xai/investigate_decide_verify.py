@@ -5,7 +5,7 @@ from .verify import verify
 
 import json
 from pydantic import BaseModel
-from .investigate_verify import list_to_map, normalize_args, print_tool_call
+from .investigate_verify import list_to_map, normalize_args, format_tool_call
 
 class ToolCallHandler:
     def __init__(self, postfn, printer, attempt_id, arg_spec):
@@ -25,7 +25,7 @@ class ToolCallHandler:
                                             "output",
                                             "error")
 
-            print_tool_call(self.printer, args_norm, self.arg_spec, fnoutput)
+            self.printer.indented_print(format_tool_call(args_norm, self.arg_spec, fnoutput))
 
             if not fnerror:
                 self.call_history.append((args_norm, fnoutput))
@@ -51,8 +51,7 @@ class ToolCallHandler:
     def format_call_history(self):
         lines = []
         for args, output in self.call_history:
-            args_str = "(" + ", ".join(map(str, args)) + ")"
-            lines.append(f"{args_str} → {output}")
+            lines.append(format_tool_call(args, self.arg_spec, output))
         return "\n".join(lines)
 
 class NoToolException(Exception):

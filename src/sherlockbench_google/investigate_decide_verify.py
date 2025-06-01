@@ -6,7 +6,7 @@ from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRate
 from datetime import datetime
 from .prompts import system_message, make_initial_message, make_decision_message
 from .verify import verify
-from .investigate_verify import generate_schema, normalize_args, print_tool_call
+from .investigate_verify import generate_schema, normalize_args, format_tool_call
 
 class NoToolException(Exception):
     """When the LLM doesn't use it's tool when it was expected to."""
@@ -34,7 +34,7 @@ class ToolCallHandler:
                                          "output",
                                          "error")
 
-        print_tool_call(self.printer, args_norm, self.arg_spec, fnoutput)
+        self.printer.indented_print(format_tool_call(args_norm, self.arg_spec, fnoutput))
 
         if not fnerror:
             self.call_history.append((args_norm, fnoutput))
@@ -54,8 +54,7 @@ class ToolCallHandler:
     def format_call_history(self):
         lines = []
         for args, output in self.call_history:
-            args_str = "(" + ", ".join(map(str, args)) + ")"
-            lines.append(f"{args_str} → {output}")
+            lines.append(format_tool_call(args, self.arg_spec, output))
         return "\n".join(lines)
 
 def get_text_from_completion(obj_list):
