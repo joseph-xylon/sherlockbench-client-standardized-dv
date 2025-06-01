@@ -9,11 +9,12 @@ from .investigate_verify import list_to_map, normalize_args, format_tool_call, N
 from .verify import verify
 
 class ToolCallHandler:
-    def __init__(self, postfn, printer, attempt_id, arg_spec):
+    def __init__(self, postfn, printer, attempt_id, arg_spec, output_type):
         self.postfn = postfn
         self.printer = printer
         self.attempt_id = attempt_id
         self.arg_spec = arg_spec
+        self.output_type = output_type
         self.call_history = []
 
     def handle_tool_call(self, call):
@@ -30,7 +31,7 @@ class ToolCallHandler:
         if fnoutput is None:
             fnoutput = "Error calling tool"
 
-        self.printer.indented_print(format_tool_call(args_norm, self.arg_spec, fnoutput))
+        self.printer.indented_print(format_tool_call(args_norm, self.arg_spec, self.output_type, fnoutput))
 
         if not fnerror:
             self.call_history.append((args_norm, fnoutput))
@@ -47,10 +48,10 @@ class ToolCallHandler:
     def format_call_history(self):
         lines = []
         for args, output in self.call_history:
-            lines.append(format_tool_call(args, self.arg_spec, output))
+            lines.append(format_tool_call(args, self.arg_spec, self.output_type, output))
         return "\n".join(lines)
 
-def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec, test_limit):
+def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec, output_type, test_limit):
     mapped_args = list_to_map(arg_spec)
     tools = [
         {
@@ -64,7 +65,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
         }
     ]
 
-    tool_handler = ToolCallHandler(postfn, printer, attempt_id, arg_spec)
+    tool_handler = ToolCallHandler(postfn, printer, attempt_id, arg_spec, output_type)
 
     # call the LLM repeatedly until it stops calling it's tool
     tool_call_counter = 0
@@ -143,7 +144,7 @@ def decision(completionfn, messages, printer):
     return messages
 
 def investigate_decide_verify(postfn, completionfn, config, attempt, run_id, cursor):
-    attempt_id, arg_spec, test_limit = destructure(attempt, "attempt-id", "arg-spec", "test-limit")
+    attempt_id, arg_spec, output_type, test_limit = destructure(attempt, "attempt-id", "arg-spec", "output-type", "test-limit")
 
     start_time = datetime.now()
     start_api_calls = completionfn.total_call_count
@@ -155,7 +156,7 @@ def investigate_decide_verify(postfn, completionfn, config, attempt, run_id, cur
 
     messages = make_initial_message(test_limit)
     tool_calls, tool_call_count = investigate(config, postfn, completionfn, messages,
-                                              printer, attempt_id, arg_spec, test_limit)
+                                              printer, attempt_id, arg_spec, output_type, test_limit)
 
     printer.print("\n### SYSTEM: making decision based on tool calls", arg_spec)
     printer.print(tool_calls)

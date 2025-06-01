@@ -15,7 +15,7 @@ def normalize_args(input_dict):
     """Converts a dict into a list of values, sorted by the alphabetical order of the keys."""
     return [input_dict[key] for key in sorted(input_dict.keys())]
 
-def format_tool_call(args, arg_spec, result):
+def format_tool_call(args, arg_spec, output_type, result):
     # Show strings in double-quotes
     fmt_args = list(
         map(
@@ -25,12 +25,17 @@ def format_tool_call(args, arg_spec, result):
         )
     )
 
-    if len(fmt_args) > 1:
-        return f"({', '.join(map(str, fmt_args))}) → \"{result}\""
+    if output_type == "string":
+        oput = f'"{result}"'
     else:
-        return f"{', '.join(map(str, fmt_args))} → \"{result}\""
+        oput = result
 
-def handle_tool_call(postfn, printer, attempt_id, call, arg_spec):
+    if len(fmt_args) > 1:
+        return f"({', '.join(map(str, fmt_args))}) → {oput}"
+    else:
+        return f"{', '.join(map(str, fmt_args))} → {oput}"
+
+def handle_tool_call(postfn, printer, attempt_id, call, arg_spec, output_type):
     arguments = json.loads(call.function.arguments)
     args_norm = normalize_args(arguments)
 
@@ -38,7 +43,7 @@ def handle_tool_call(postfn, printer, attempt_id, call, arg_spec):
         fnoutput = postfn("test-function", {"attempt-id": attempt_id,
                                             "args": args_norm})["output"]
 
-        printer.indented_print(format_tool_call(args_norm, arg_spec, fnoutput))
+        printer.indented_print(format_tool_call(args_norm, arg_spec, output_type, fnoutput))
 
         function_call_result_message = {
             "role": "tool",
@@ -63,7 +68,7 @@ class MsgLimitException(Exception):
     """When the LLM uses too many messages."""
     pass
 
-def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec, test_limit):
+def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec, output_type, test_limit):
     mapped_args = list_to_map(arg_spec)
     tools = [
         {
@@ -99,7 +104,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
                              "tool_calls": tool_calls})
 
             for call in tool_calls:
-                messages.append(handle_tool_call(postfn, printer, attempt_id, call, arg_spec))
+                messages.append(handle_tool_call(postfn, printer, attempt_id, call, arg_spec, output_type))
 
                 tool_call_counter += 1
 
@@ -114,7 +119,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
     raise MsgLimitException("Investigation loop overrun.")
 
 def investigate_verify(postfn, completionfn, config, attempt, run_id, cursor):
-    attempt_id, arg_spec, test_limit = destructure(attempt, "attempt-id", "arg-spec", "test-limit")
+    attempt_id, arg_spec, output_type, test_limit = destructure(attempt, "attempt-id", "arg-spec", "output-type", "test-limit")
 
     start_time = datetime.now()
     start_api_calls = completionfn.total_call_count
@@ -126,7 +131,7 @@ def investigate_verify(postfn, completionfn, config, attempt, run_id, cursor):
 
     messages = make_initial_messages(test_limit)
     messages, tool_call_count = investigate(config, postfn, completionfn, messages,
-                                            printer, attempt_id, arg_spec, test_limit)
+                                            printer, attempt_id, arg_spec, output_type, test_limit)
 
     printer.print("\n### SYSTEM: verifying function with args", arg_spec)
     verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id)
