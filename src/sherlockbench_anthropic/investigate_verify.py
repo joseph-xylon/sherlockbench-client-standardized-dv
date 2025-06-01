@@ -24,11 +24,20 @@ class MsgLimitException(Exception):
     """When the LLM uses too many messages."""
     pass
 
-def print_tool_call(printer, args, result):
-    if len(args) > 1:
-        printer.indented_print("(" + ", ".join(map(str, args)) + ")", "→", result)
+def print_tool_call(printer, args, arg_spec, result):
+    # Show strings in double-quotes
+    fmt_args = list(
+        map(
+            lambda v, t: f'"{v}"' if t == "string" else v,
+            args,
+            arg_spec
+        )
+    )
+
+    if len(fmt_args) > 1:
+        printer.indented_print("(" + ", ".join(map(str, fmt_args)) + ")", "→", result)
     else:
-        printer.indented_print(", ".join(map(str, args)), "→", result)
+        printer.indented_print(", ".join(map(str, fmt_args)), "→", result)
 
 def parse_completion(content):
     #text = next((d["text"] for d in content if d.get("type") == "text"), None)
@@ -42,7 +51,7 @@ def parse_completion(content):
 
     return (thinking_block, redacted_thinking_block, text, tool)
 
-def handle_tool_call(postfn, printer, attempt_id, call):
+def handle_tool_call(postfn, printer, attempt_id, call, arg_spec):
     arguments = call.input
     call_id = call.id
     args_norm = normalize_args(arguments)
@@ -53,7 +62,7 @@ def handle_tool_call(postfn, printer, attempt_id, call):
     # Handle case where the output key is missing
     fnoutput = response.get("output", "Error calling tool")
 
-    print_tool_call(printer, args_norm, fnoutput)
+    print_tool_call(printer, args_norm, arg_spec, fnoutput)
 
     function_call_result_message = {"type": "tool_result",
                                     "tool_use_id": call_id,
@@ -112,7 +121,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
             }
 
             for call in tool_calls:
-                tool_call_user_message["content"].append(handle_tool_call(postfn, printer, attempt_id, call))
+                tool_call_user_message["content"].append(handle_tool_call(postfn, printer, attempt_id, call, arg_spec))
 
                 tool_call_counter += 1
 

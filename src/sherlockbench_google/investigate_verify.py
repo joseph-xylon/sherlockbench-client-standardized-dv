@@ -27,13 +27,22 @@ def normalize_args(input_dict):
     """Converts a dict into a list of values, sorted by the alphabetical order of the keys."""
     return [input_dict[key] for key in sorted(input_dict.keys())]
 
-def print_tool_call(printer, args, result):
-    if len(args) > 1:
-        printer.indented_print("(" + ", ".join(map(str, args)) + ")", "→", result)
-    else:
-        printer.indented_print(", ".join(map(str, args)), "→", result)
+def print_tool_call(printer, args, arg_spec, result):
+    # Show strings in double-quotes
+    fmt_args = list(
+        map(
+            lambda v, t: f'"{v}"' if t == "string" else v,
+            args,
+            arg_spec
+        )
+    )
 
-def handle_tool_call(postfn, printer, attempt_id, call):
+    if len(fmt_args) > 1:
+        printer.indented_print("(" + ", ".join(map(str, fmt_args)) + ")", "→", result)
+    else:
+        printer.indented_print(", ".join(map(str, fmt_args)), "→", result)
+
+def handle_tool_call(postfn, printer, attempt_id, call, arg_spec):
     arguments = call.args
     fnname = call.name
     args_norm = normalize_args(arguments)
@@ -41,7 +50,7 @@ def handle_tool_call(postfn, printer, attempt_id, call):
     fnoutput = postfn("test-function", {"attempt-id": attempt_id,
                                         "args": args_norm})["output"]
 
-    print_tool_call(printer, args_norm, fnoutput)
+    print_tool_call(printer, args_norm, arg_spec, fnoutput)
 
     function_response_content = types.Content(
         role='tool', parts=[types.Part.from_function_response(
@@ -110,7 +119,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
                 messages.append(part)
 
                 if part.function_call is not None:
-                    messages.append(handle_tool_call(postfn, printer, attempt_id, part.function_call))
+                    messages.append(handle_tool_call(postfn, printer, attempt_id, part.function_call, arg_spec))
                     tool_call_counter += 1
 
         # if it didn't call the tool we can move on to verifications

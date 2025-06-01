@@ -8,10 +8,11 @@ from pydantic import BaseModel
 from .investigate_verify import list_to_map, normalize_args, print_tool_call
 
 class ToolCallHandler:
-    def __init__(self, postfn, printer, attempt_id):
+    def __init__(self, postfn, printer, attempt_id, arg_spec):
         self.postfn = postfn
         self.printer = printer
         self.attempt_id = attempt_id
+        self.arg_spec = arg_spec
         self.call_history = []
 
     def handle_tool_call(self, call):
@@ -24,7 +25,7 @@ class ToolCallHandler:
                                             "output",
                                             "error")
 
-            print_tool_call(self.printer, args_norm, fnoutput)
+            print_tool_call(self.printer, args_norm, self.arg_spec, fnoutput)
 
             if not fnerror:
                 self.call_history.append((args_norm, fnoutput))
@@ -79,7 +80,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
         }
     ]
 
-    tool_handler = ToolCallHandler(postfn, printer, attempt_id)
+    tool_handler = ToolCallHandler(postfn, printer, attempt_id, arg_spec)
 
     # call the LLM repeatedly until it stops calling it's tool
     tool_call_counter = 0
