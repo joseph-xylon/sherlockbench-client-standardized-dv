@@ -1,12 +1,13 @@
-from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q
+import json
 from datetime import datetime
-from .prompts import make_initial_messages, make_decision_messages
-from .verify import verify
 from functools import partial
 
-import json
 from pydantic import BaseModel
+from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q
+
 from .investigate_verify import list_to_map, normalize_args, format_tool_call, format_inputs
+from .prompts import make_initial_messages, make_decision_messages
+from .verify import verify
 
 class ToolCallHandler:
     def __init__(self, postfn, printer, attempt_id, arg_spec, output_type):

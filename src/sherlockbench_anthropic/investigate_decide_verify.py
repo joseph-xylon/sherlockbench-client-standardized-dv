@@ -1,12 +1,13 @@
-from anthropic.types import TextBlock, ToolUseBlock, ThinkingBlock, RedactedThinkingBlock
-from pprint import pprint
-from sherlockbench_client import destructure, AccumulatingPrinter, q
-from functools import partial
-
 import json
 from datetime import datetime
-from .prompts import make_initial_message, make_decision_messages
+from functools import partial
+from pprint import pprint
+
+from anthropic.types import TextBlock, ToolUseBlock, ThinkingBlock, RedactedThinkingBlock
+from sherlockbench_client import destructure, AccumulatingPrinter, q
+
 from .investigate_verify import list_to_map, normalize_args, format_tool_call, format_inputs, NoToolException, MsgLimitException, parse_completion
+from .prompts import make_initial_message, make_decision_messages
 from .verify import verify
 
 class ToolCallHandler:

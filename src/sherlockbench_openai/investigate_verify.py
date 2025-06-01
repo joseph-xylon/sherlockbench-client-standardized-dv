@@ -1,11 +1,11 @@
-from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, value_list_to_map
-from datetime import datetime
-from .prompts import make_initial_messages
-from .verify import verify
-
 import json
+from datetime import datetime
 
 from pydantic import BaseModel
+from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, value_list_to_map
+
+from .prompts import make_initial_messages
+from .verify import verify
 
 def list_to_map(input_list):
     """openai doesn't like arrays much so just assign arbritray keys"""
@@ -51,7 +51,7 @@ def format_tool_call(args, arg_spec, output_type, result):
 
     return f"{format_inputs(arg_spec, clean_args)} → {oput}"
 
-def handle_tool_call(postfn, printer, attempt_id, call, arg_spec, output_type):
+def handle_tool_call(postfn, printer, attempt_id, arg_spec, output_type, call):
     arguments = json.loads(call.function.arguments)
     args_norm = normalize_args(arguments)
 
@@ -113,7 +113,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
                              "tool_calls": tool_calls})
 
             for call in tool_calls:
-                messages.append(handle_tool_call(postfn, printer, attempt_id, call, arg_spec, output_type))
+                messages.append(handle_tool_call(postfn, printer, attempt_id, arg_spec, output_type, call))
 
                 tool_call_counter += 1
 

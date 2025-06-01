@@ -1,9 +1,10 @@
-from anthropic.types import TextBlock, ToolUseBlock, ThinkingBlock, RedactedThinkingBlock
-from pprint import pprint
-from sherlockbench_client import destructure, AccumulatingPrinter, q, value_list_to_map
-
 import json
 from datetime import datetime
+from pprint import pprint
+
+from anthropic.types import TextBlock, ToolUseBlock, ThinkingBlock, RedactedThinkingBlock
+from sherlockbench_client import destructure, AccumulatingPrinter, q, value_list_to_map
+
 from .prompts import make_initial_message
 from .verify import verify
 
@@ -59,7 +60,7 @@ def parse_completion(content):
 
     return (thinking_block, redacted_thinking_block, text, tool)
 
-def handle_tool_call(postfn, printer, attempt_id, call, arg_spec, output_type):
+def handle_tool_call(postfn, printer, attempt_id, arg_spec, output_type, call):
     arguments = call.input
     call_id = call.id
     args_norm = normalize_args(arguments)
@@ -129,7 +130,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
             }
 
             for call in tool_calls:
-                tool_call_user_message["content"].append(handle_tool_call(postfn, printer, attempt_id, call, arg_spec, output_type))
+                tool_call_user_message["content"].append(handle_tool_call(postfn, printer, attempt_id, arg_spec, output_type, call))
 
                 tool_call_counter += 1
 

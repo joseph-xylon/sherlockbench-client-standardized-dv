@@ -1,10 +1,12 @@
 import sys
 import time
-from google.genai import types
-from .utility import save_message
-from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, value_list_to_map
 from datetime import datetime
+
+from google.genai import types
+from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, value_list_to_map
+
 from .prompts import system_message, make_initial_message
+from .utility import save_message
 from .verify import verify
 
 class NoToolException(Exception):
@@ -50,7 +52,7 @@ def format_tool_call(args, arg_spec, output_type, result):
 
     return f"{format_inputs(arg_spec, args)} → {oput}"
 
-def handle_tool_call(postfn, printer, attempt_id, call, arg_spec, output_type):
+def handle_tool_call(postfn, printer, attempt_id, arg_spec, output_type, call):
     arguments = call.args
     fnname = call.name
     args_norm = normalize_args(arguments)
@@ -127,7 +129,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
                 messages.append(part)
 
                 if part.function_call is not None:
-                    messages.append(handle_tool_call(postfn, printer, attempt_id, part.function_call, arg_spec, output_type))
+                    messages.append(handle_tool_call(postfn, printer, attempt_id, arg_spec, output_type, part.function_call))
                     tool_call_counter += 1
 
         # if it didn't call the tool we can move on to verifications

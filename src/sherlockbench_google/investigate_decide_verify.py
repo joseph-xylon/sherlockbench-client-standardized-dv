@@ -1,13 +1,15 @@
 import sys
 import time
-from google.genai import types
-from .utility import save_message
-from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q
 from datetime import datetime
-from .prompts import system_message, make_initial_message, make_decision_message
 from functools import partial
-from .verify import verify
+
+from google.genai import types
+from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q
+
 from .investigate_verify import generate_schema, normalize_args, format_tool_call, format_inputs
+from .prompts import system_message, make_initial_message, make_decision_message
+from .utility import save_message
+from .verify import verify
 
 class NoToolException(Exception):
     """When the LLM doesn't use it's tool when it was expected to."""

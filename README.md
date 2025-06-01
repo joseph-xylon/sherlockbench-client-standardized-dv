@@ -57,7 +57,9 @@ anthropic:
 
     model: "claude-3-5-haiku-20241022"
     # special postfix +thinking enables Anthropic's "extended thinking"
+    #model: "claude-sonnet-4-20250514"
     #model: "claude-sonnet-4-20250514+thinking"
+    #model: "claude-opus-4-20250514"
     #model: "claude-opus-4-20250514+thinking"
     
     #temperature: 0.8
