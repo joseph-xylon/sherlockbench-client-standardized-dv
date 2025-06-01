@@ -5,8 +5,9 @@ from .utility import save_message
 from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q
 from datetime import datetime
 from .prompts import system_message, make_initial_message, make_decision_message
+from functools import partial
 from .verify import verify
-from .investigate_verify import generate_schema, normalize_args, format_tool_call
+from .investigate_verify import generate_schema, normalize_args, format_tool_call, format_inputs
 
 class NoToolException(Exception):
     """When the LLM doesn't use it's tool when it was expected to."""
@@ -183,7 +184,7 @@ def investigate_decide_verify(postfn, completionfn, config, attempt, run_id, cur
     messages = decision(completionfn, messages, printer)
 
     printer.print("\n### SYSTEM: verifying function with args", arg_spec)
-    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id)
+    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id, partial(format_inputs, arg_spec))
 
     time_taken = (datetime.now() - start_time).total_seconds()
     q.add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count, printer, completionfn, start_api_calls, attempt_id)

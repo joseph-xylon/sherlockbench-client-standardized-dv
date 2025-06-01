@@ -1,6 +1,6 @@
 from anthropic.types import TextBlock, ToolUseBlock, ThinkingBlock, RedactedThinkingBlock
 from pprint import pprint
-from sherlockbench_client import destructure, AccumulatingPrinter, q
+from sherlockbench_client import destructure, AccumulatingPrinter, q, value_list_to_map
 
 import json
 from datetime import datetime
@@ -16,15 +16,7 @@ def normalize_args(input_dict):
     """Converts a dict into a list of values, sorted by the alphabetical order of the keys."""
     return [input_dict[key] for key in sorted(input_dict.keys())]
 
-class NoToolException(Exception):
-    """When the LLM doesn't use it's tool when it was expected to."""
-    pass
-
-class MsgLimitException(Exception):
-    """When the LLM uses too many messages."""
-    pass
-
-def format_tool_call(args, arg_spec, output_type, result):
+def format_inputs(arg_spec, args):
     # Show strings in double-quotes
     fmt_args = list(
         map(
@@ -34,15 +26,26 @@ def format_tool_call(args, arg_spec, output_type, result):
         )
     )
 
+    if len(fmt_args) > 1:
+        return f"({', '.join(map(str, fmt_args))})"
+    else:
+        return f"{', '.join(map(str, fmt_args))}"
+
+class NoToolException(Exception):
+    """When the LLM doesn't use it's tool when it was expected to."""
+    pass
+
+class MsgLimitException(Exception):
+    """When the LLM uses too many messages."""
+    pass
+
+def format_tool_call(args, arg_spec, output_type, result):
     if output_type == "string":
         oput = f'"{result}"'
     else:
         oput = result
 
-    if len(fmt_args) > 1:
-        return f"({', '.join(map(str, fmt_args))}) → {oput}"
-    else:
-        return f"{', '.join(map(str, fmt_args))} → {oput}"
+    return f"{format_inputs(arg_spec, args)} → {oput}"
 
 def parse_completion(content):
     #text = next((d["text"] for d in content if d.get("type") == "text"), None)
@@ -171,7 +174,7 @@ def investigate_verify(postfn, completionfn, config, attempt, run_id, cursor):
                                             printer, attempt_id, arg_spec, output_type, test_limit)
 
     printer.print("\n### SYSTEM: verifying function with args", arg_spec)
-    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id)
+    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id, value_list_to_map)
 
     time_taken = (datetime.now() - start_time).total_seconds()
     q.add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count, printer, completionfn, start_api_calls, attempt_id)

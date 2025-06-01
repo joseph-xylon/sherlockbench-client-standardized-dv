@@ -1,7 +1,7 @@
 from anthropic.types import TextBlock, ToolUseBlock
 import json
 from .prompts import make_verification_message
-from sherlockbench_client import destructure, value_list_to_map
+from sherlockbench_client import destructure
 from pprint import pprint
 
 def last_brace_block(s: str) -> str:
@@ -24,17 +24,19 @@ def last_brace_block(s: str) -> str:
         return s[start:end+1]
     return ''
 
-def verify(config, postfn, completionfn, messages, printer, attempt_id):
+def verify(config, postfn, completionfn, messages, printer, attempt_id, v_formatter):
     # for each verification
     while (v_data := postfn("next-verification", {"attempt-id": attempt_id})):
         verification = v_data["next-verification"]
         output_type = v_data["output-type"]
+ 
+        verification_formatted = v_formatter(verification)
 
         printer.print("\n### SYSTEM: inputs:")
-        printer.indented_print(verification)
+        printer.indented_print(verification_formatted)
 
         # Anthropic 'Requests which include `tool_use` or `tool_result` blocks must define tools.'
-        vmessages = [messages[-1]] + [make_verification_message(value_list_to_map(verification))]
+        vmessages = [messages[-1]] + [make_verification_message(verification_formatted)]
 
         # claude sometimes gives invalid json. retry a few times
         attempts = 0

@@ -1,11 +1,12 @@
 from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q
 from datetime import datetime
 from .prompts import make_initial_messages, make_decision_messages
+from functools import partial
 
 import json
 from sherlockbench_client import destructure
 from pydantic import BaseModel
-from .investigate_verify import list_to_map, normalize_args, format_tool_call
+from .investigate_verify import list_to_map, normalize_args, format_tool_call, format_inputs
 from .verify import verify
 
 class ToolCallHandler:
@@ -142,7 +143,7 @@ def investigate_decide_verify(postfn, completionfn, config, attempt, run_id, cur
     messages = decision(completionfn, messages, printer)
 
     printer.print("\n### SYSTEM: verifying function with args", arg_spec)
-    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id)
+    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id, partial(format_inputs, arg_spec))
 
     time_taken = (datetime.now() - start_time).total_seconds()
     q.add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count, printer, completionfn, start_api_calls, attempt_id)
