@@ -5,31 +5,8 @@ from .prompts import make_initial_messages, make_decision_messages
 import json
 from sherlockbench_client import destructure
 from pydantic import BaseModel
+from .investigate_verify import list_to_map, normalize_args, print_tool_call
 from .verify import verify
-
-def list_to_map(input_list):
-    """openai doesn't like arrays much so just assign arbritray keys"""
-    keys = [chr(97 + i) for i in range(len(input_list))]  # Generate keys: 'a', 'b', 'c', etc.
-    return {key: {"type": item} for key, item in zip(keys, input_list)}
-
-def normalize_args(input_dict):
-    """Converts a dict into a list of values, sorted by the alphabetical order of the keys."""
-    return [input_dict[key] for key in sorted(input_dict.keys())]
-
-def print_tool_call(printer, args, result):
-    # Clean inputs to handle surrogate characters that can't be encoded
-    clean_args = []
-    for arg in args:
-        if isinstance(arg, str):
-            # Replace surrogates with replacement character
-            arg = arg.encode('utf-8', 'replace').decode('utf-8')
-        clean_args.append(arg)
-
-    # Clean result similarly if it's a string
-    if isinstance(result, str):
-        result = result.encode('utf-8', 'replace').decode('utf-8')
-
-    printer.indented_print("(" + ", ".join(map(str, clean_args)) + ")", "→", result)
 
 class ToolCallHandler:
     def __init__(self, postfn, printer, attempt_id):

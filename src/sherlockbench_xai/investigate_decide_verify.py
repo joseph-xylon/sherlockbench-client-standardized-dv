@@ -5,18 +5,7 @@ from .verify import verify
 
 import json
 from pydantic import BaseModel
-
-def list_to_map(input_list):
-    """openai doesn't like arrays much so just assign arbritray keys"""
-    keys = [chr(97 + i) for i in range(len(input_list))]  # Generate keys: 'a', 'b', 'c', etc.
-    return {key: {"type": item} for key, item in zip(keys, input_list)}
-
-def normalize_args(input_dict):
-    """Converts a dict into a list of values, sorted by the alphabetical order of the keys."""
-    return [input_dict[key] for key in sorted(input_dict.keys())]
-
-def print_tool_call(printer, args, result):
-    printer.indented_print("(" + ", ".join(map(str, args)) + ")", "→", result)
+from .investigate_verify import list_to_map, normalize_args, print_tool_call
 
 class ToolCallHandler:
     def __init__(self, postfn, printer, attempt_id):

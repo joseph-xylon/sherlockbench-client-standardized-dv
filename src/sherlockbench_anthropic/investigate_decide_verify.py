@@ -5,39 +5,8 @@ from sherlockbench_client import destructure, AccumulatingPrinter, q
 import json
 from datetime import datetime
 from .prompts import make_initial_message, make_decision_messages
+from .investigate_verify import list_to_map, normalize_args, print_tool_call, NoToolException, MsgLimitException, parse_completion
 from .verify import verify
-
-def list_to_map(input_list):
-    """assign arbritray keys to each argument and format it how Anthropic likes"""
-    keys = [chr(97 + i) for i in range(len(input_list))]  # Generate keys: 'a', 'b', 'c', etc.
-    return {key: {"type": item} for key, item in zip(keys, input_list)}
-
-def normalize_args(input_dict):
-    """Converts a dict into a list of values, sorted by the alphabetical order of the keys."""
-    return [input_dict[key] for key in sorted(input_dict.keys())]
-
-class NoToolException(Exception):
-    """When the LLM doesn't use it's tool when it was expected to."""
-    pass
-
-class MsgLimitException(Exception):
-    """When the LLM uses too many messages."""
-    pass
-
-def print_tool_call(printer, args, result):
-    printer.indented_print("(" + ", ".join(map(str, args)) + ")", "→", result)
-
-def parse_completion(content):
-    #text = next((d["text"] for d in content if d.get("type") == "text"), None)
-    #tool = next((d["input"] for d in content if d.get("type") == "tool_use"), None)
-
-    # using next allows us to have a default value
-    thinking_block = next((item for item in content if isinstance(item, ThinkingBlock)), None)
-    redacted_thinking_block = next((item for item in content if isinstance(item, RedactedThinkingBlock)), None)
-    text = next((item.text for item in content if isinstance(item, TextBlock)), None)
-    tool = [item for item in content if isinstance(item, ToolUseBlock)]
-
-    return (thinking_block, redacted_thinking_block, text, tool)
 
 class ToolCallHandler:
     def __init__(self, postfn, printer, attempt_id):

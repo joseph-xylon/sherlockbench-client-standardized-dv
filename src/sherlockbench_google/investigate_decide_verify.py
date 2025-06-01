@@ -6,6 +6,7 @@ from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRate
 from datetime import datetime
 from .prompts import system_message, make_initial_message, make_decision_message
 from .verify import verify
+from .investigate_verify import generate_schema, normalize_args, print_tool_call
 
 class NoToolException(Exception):
     """When the LLM doesn't use it's tool when it was expected to."""
@@ -14,21 +15,6 @@ class NoToolException(Exception):
 class MsgLimitException(Exception):
     """When the LLM uses too many messages."""
     pass
-
-def generate_schema(input_types):
-    # Generate a dictionary with keys as sequential letters and values as types.Schema objects
-    schema = {
-        chr(97 + i): types.Schema(type=type_str.upper())  # chr(97) is 'a', chr(98) is 'b', etc.
-        for i, type_str in enumerate(input_types)
-    }
-    return schema
-
-def normalize_args(input_dict):
-    """Converts a dict into a list of values, sorted by the alphabetical order of the keys."""
-    return [input_dict[key] for key in sorted(input_dict.keys())]
-
-def print_tool_call(printer, args, result):
-    printer.indented_print("(" + ", ".join(map(str, args)) + ")", "→", result)
 
 class ToolCallHandler:
     def __init__(self, postfn, printer, attempt_id):
