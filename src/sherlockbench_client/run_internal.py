@@ -1,6 +1,8 @@
+import sys
+from pprint import pprint
+
 from .main import load_config, destructure, post
 from . import queries as q
-import sys
 
 def load_provider_config(provider):
     """Load configuration for the specified provider."""
@@ -33,6 +35,9 @@ def resume_failed_run(config, cursor, run_id, args):
 
     # Update config with info from the failed run
     config.update(run_config)
+
+    print("\n### SYSTEM: Using the following config:")
+    pprint(config)
 
     # Handle resume options
     if args.resume == "retry":
@@ -168,10 +173,10 @@ def reset_attempt(config, run_id, attempt_id):
                         str(run_id),
                         "developer/reset-attempt",
                         {"attempt-id": str(attempt_id)})
-        
+
         # Check for success in status key
         return response.get("status") == "success"
-        
+
     except Exception as e:
         print(f"\n### SYSTEM ERROR: Failed to reset attempt: {str(e)}")
         return False

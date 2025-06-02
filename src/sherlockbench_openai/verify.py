@@ -11,7 +11,7 @@ def verify(config, postfn, completionfn, messages, printer, attempt_id, v_format
         output_type = v_data["output-type"]
 
         verification_formatted = v_formatter(verification)
-        
+
         printer.print("\n### SYSTEM: inputs:")
         printer.indented_print(verification_formatted)
 

@@ -32,7 +32,7 @@ Based on these examples, please determine what the function does and summarise."
 
 def make_verification_message(f_input):
     formatted = f_input
-    
+
     return {"role": "user", "content":
 f"""To test your theory, please tell me what is the expected output from the function with this input:
 

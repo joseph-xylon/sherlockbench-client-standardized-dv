@@ -27,7 +27,7 @@ def create_completion(client, tools=None, schema=None, temperature=None, **kwarg
 
     if temperature is not None:
         config_args["temperature"] = temperature
-    
+
     if tools is not None:
         config_args["tools"] = tools
 
@@ -52,20 +52,20 @@ def run_benchmark(executor, config, db_conn, cursor, run_id, attempts, start_tim
     def completionfn(**kwargs):
         if "temperature" in config:
             kwargs["temperature"] = config['temperature']
-            
+
         return create_completion(client, model=config['model'], **kwargs)
 
     completionfn = LLMRateLimiter(rate_limit_seconds=config['rate-limit'],
                                   llmfn=completionfn,
                                   backoff_exceptions=(errors.ServerError))
-    
+
     for attempt in attempts:
         # Track the current attempt for error handling
         set_current_attempt(attempt)
-        
+
         # Process the attempt
         executor(postfn, completionfn, config, attempt, run_id, cursor)
-        
+
         # Clear the current attempt since we've completed processing it
         set_current_attempt(None)
 

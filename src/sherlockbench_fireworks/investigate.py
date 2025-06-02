@@ -12,7 +12,7 @@ def remove_think_blocks(text: str) -> str:
     """
     if text is None:
         return text
-    
+
     # re.DOTALL makes '.' match newlines as well
     pattern = r"<think>.*?</think>"
     return re.sub(pattern, "", text, flags=re.DOTALL)
@@ -104,7 +104,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
         #         print("retrying")
 
         completion = completionfn(messages=messages, tools=tools)
-                
+
         response = completion.choices[0]
         message = response.message.content
         tool_calls = response.message.tool_calls

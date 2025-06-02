@@ -33,7 +33,7 @@ def run_benchmark(executor, config, db_conn, cursor, run_id, attempts, start_tim
 
         if "reasoning_effort" in config:
             kwargs["reasoning_effort"] = config['reasoning_effort']
-            
+
         return create_completion(client, model=config['model'], **kwargs)
 
     completionfn = LLMRateLimiter(rate_limit_seconds=config['rate-limit'],
@@ -43,10 +43,10 @@ def run_benchmark(executor, config, db_conn, cursor, run_id, attempts, start_tim
     for attempt in attempts:
         # Track the current attempt for error handling
         set_current_attempt(attempt)
-        
+
         # Process the attempt
         executor(postfn, completionfn, config, attempt, run_id, cursor)
-        
+
         # Clear the current attempt since we've completed processing it
         set_current_attempt(None)
 

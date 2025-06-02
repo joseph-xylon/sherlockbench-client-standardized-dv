@@ -51,7 +51,7 @@ def verify(config, postfn, completionfn, messages, printer, attempt_id):
             return False
         else:
             printer.print("\n### SYSTEM: CORRECT")
-        
+
         if vstatus in ("done"):
             break
 

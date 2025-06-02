@@ -75,7 +75,7 @@ def get_text_from_completion(obj_list):
     """
     Concatenates the .text property from each object in the list.
     If an object doesn't have a .text property, it is skipped.
-    
+
     :param obj_list: List of objects to process
     :return: Concatenated string of all .text properties
     """
@@ -114,7 +114,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
             if completion.candidates is None:
                 print("Got None response. Retrying after delay.")
                 time.sleep(60)
-            else:    
+            else:
                 break
 
         message = get_text_from_completion(completion)

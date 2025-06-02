@@ -53,7 +53,7 @@ def get(base_url, path):
     except HTTPError as http_err:
         print(f"HTTP error occurred: {http_err}")
         return {"error": str(http_err)}
-        
+
     return response.json()
 
 class AbortException(Exception):
@@ -83,10 +83,10 @@ class AccumulatingPrinter:
         """
         # Concatenate arguments with spaces
         concatenated_string = " ".join(str(arg) for arg in args)
-        
+
         # Print the concatenated string
         print(concatenated_string)
-        
+
         # Append the concatenated string to the megastring
         self.megastring += concatenated_string + "\n"
 
@@ -166,7 +166,7 @@ class LLMRateLimiter:
             sleep_time = self.rate_limit_seconds - elapsed_time
             if sleep_time > 0:
                 time.sleep(sleep_time)
-        
+
         max_retries = 3
         for retry in range(max_retries):
             try:
@@ -177,14 +177,14 @@ class LLMRateLimiter:
             except self.backoff_exceptions as e:
                 print()
                 print(e)
-                
+
                 self.rate_limit_seconds += 1
                 print(f"\n### SYSTEM: backing off for 5 minutes and increasing rate limit to {self.rate_limit_seconds} seconds (retry {retry+1}/{max_retries})")
-                
+
                 # If this was the last retry, re-raise the exception
                 if retry == max_retries - 1:
                     raise
-                    
+
                 time.sleep(300)
 
     def __call__(self, *args, **kwargs):

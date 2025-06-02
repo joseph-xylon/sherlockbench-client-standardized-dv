@@ -10,7 +10,7 @@ def main():
     try:
         # Load configuration
         config = load_config("resources/config.yaml")
-        
+
         # Get problem sets from the server
         response = get(config['base-url'], "problem-sets")
         problem_sets = response.get('problem-sets', {})

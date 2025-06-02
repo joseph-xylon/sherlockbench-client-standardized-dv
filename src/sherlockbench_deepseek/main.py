@@ -65,10 +65,10 @@ def run_benchmark(config, db_conn, cursor, run_id, attempts, start_time):
     for attempt in attempts:
         # Track the current attempt for error handling
         set_current_attempt(attempt)
-        
+
         # Process the attempt
         investigate_and_verify(postfn, completionfn, config, attempt, run_id, cursor)
-        
+
         # Clear the current attempt since we've completed processing it
         set_current_attempt(None)
 
