@@ -131,9 +131,9 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
                 "content": []
             }
 
-            p_handle_tool_call = partial(handle_tool_call, postfn, printer, attempt_id, arg_spec, output_type)
+            handle_tool_call_p = partial(handle_tool_call, postfn, printer, attempt_id, arg_spec, output_type)
             for call in tool_calls:
-                tool_call_user_message["content"].append(p_handle_tool_call(call))
+                tool_call_user_message["content"].append(handle_tool_call_p(call))
 
                 tool_call_counter += 1
 

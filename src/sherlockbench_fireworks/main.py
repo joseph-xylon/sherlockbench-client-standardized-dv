@@ -65,7 +65,7 @@ def run_benchmark(config, db_conn, cursor, run_id, attempts, start_time):
                                   llmfn=completionfn,
                                   backoff_exceptions=())
 
-    p_executor = partial(investigate_and_verify, postfn, completionfn, config, run_id, cursor)
+    executor_p = partial(investigate_and_verify, postfn, completionfn, config, run_id, cursor)
 
     for i, attempt in enumerate(attempts, 1):
         print_progress_with_estimate(i, len(attempts), start_time)
@@ -74,7 +74,7 @@ def run_benchmark(config, db_conn, cursor, run_id, attempts, start_time):
         set_current_attempt(attempt)
 
         # Process the attempt
-        p_executor(attempt)
+        executor_p(attempt)
 
         # Clear the current attempt since we've completed processing it
         set_current_attempt(None)

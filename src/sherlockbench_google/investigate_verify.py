@@ -126,12 +126,12 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
 
         if tool_calls:
             printer.print("\n### SYSTEM: calling tool")
-            p_handle_tool_call = partial(handle_tool_call, postfn, printer, attempt_id, arg_spec, output_type)
+            handle_tool_call_p = partial(handle_tool_call, postfn, printer, attempt_id, arg_spec, output_type)
             for part in completion.candidates[0].content.parts:
                 messages.append(part)
 
                 if part.function_call is not None:
-                    messages.append(p_handle_tool_call(part.function_call))
+                    messages.append(handle_tool_call_p(part.function_call))
                     tool_call_counter += 1
 
         # if it didn't call the tool we can move on to verifications
