@@ -128,7 +128,7 @@ def decision(completionfn, messages, printer):
 
     return messages
 
-def investigate_decide_verify(postfn, completionfn, config, attempt, run_id, cursor):
+def investigate_decide_verify(postfn, completionfn, config, run_id, cursor, attempt):
     attempt_id, arg_spec, output_type, test_limit = destructure(attempt, "attempt-id", "arg-spec", "output-type", "test-limit")
 
     start_time = datetime.now()

@@ -1,8 +1,9 @@
 import argparse
-import psycopg2
-import sys
-import uuid
 import re
+import sys
+
+import psycopg2
+
 from sherlockbench_client.main import load_config
 from sherlockbench_client.run_api import is_valid_uuid
 

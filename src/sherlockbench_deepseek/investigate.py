@@ -1,4 +1,6 @@
 import json
+from functools import partial
+
 from pydantic import BaseModel
 
 def list_to_map(input_list):
@@ -74,8 +76,9 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
                              "content": message,
                              "tool_calls": tool_calls})
 
+            p_handle_tool_call = partial(handle_tool_call, postfn, printer, attempt_id)
             for call in tool_calls:
-                messages.append(handle_tool_call(postfn, printer, attempt_id, call))
+                messages.append(p_handle_tool_call(call))
 
                 tool_call_counter += 1
 

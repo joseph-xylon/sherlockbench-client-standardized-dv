@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from functools import partial
 
 from pydantic import BaseModel
 from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, value_list_to_map
@@ -107,8 +108,9 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
                              "content": message,
                              "tool_calls": tool_calls})
 
+            p_handle_tool_call = partial(handle_tool_call, postfn, printer, attempt_id, arg_spec, output_type)
             for call in tool_calls:
-                messages.append(handle_tool_call(postfn, printer, attempt_id, arg_spec, output_type, call))
+                messages.append(p_handle_tool_call(call))
 
                 tool_call_counter += 1
 
@@ -122,7 +124,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
 
     raise MsgLimitException("Investigation loop overrun.")
 
-def investigate_verify(postfn, completionfn, config, attempt, run_id, cursor):
+def investigate_verify(postfn, completionfn, config, run_id, cursor, attempt):
     attempt_id, arg_spec, output_type, test_limit = destructure(attempt, "attempt-id", "arg-spec", "output-type", "test-limit")
 
     start_time = datetime.now()

@@ -1,13 +1,13 @@
-from openai import OpenAI, LengthFinishReasonError
+from datetime import datetime
+from functools import partial
+
+from openai import OpenAI
+
 from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, print_progress_with_estimate
 from sherlockbench_client import run_with_error_handling, set_current_attempt
 
-from .prompts import make_initial_messages
 from .investigate import investigate
-from .verify import verify
-
-from datetime import datetime
-import psycopg2
+from .prompts import make_initial_messages
 
 def create_completion(client, **kwargs):
     """closure to pre-load the model"""
@@ -16,7 +16,7 @@ def create_completion(client, **kwargs):
         **kwargs
     )
 
-def investigate_and_verify(postfn, completionfn, config, attempt, run_id, cursor):
+def investigate_and_verify(postfn, completionfn, config, run_id, cursor, attempt):
     attempt_id, arg_spec, test_limit = destructure(attempt, "attempt-id", "arg-spec", "test-limit")
 
     start_time = datetime.now()
@@ -62,6 +62,8 @@ def run_benchmark(config, db_conn, cursor, run_id, attempts, start_time):
                                   llmfn=completionfn,
                                   backoff_exceptions=())
 
+    p_executor = partial(investigate_and_verify, postfn, completionfn, config, run_id, cursor)
+
     for i, attempt in enumerate(attempts, 1):
         print_progress_with_estimate(i, len(attempts), start_time)
 
@@ -69,7 +71,7 @@ def run_benchmark(config, db_conn, cursor, run_id, attempts, start_time):
         set_current_attempt(attempt)
 
         # Process the attempt
-        investigate_and_verify(postfn, completionfn, config, attempt, run_id, cursor)
+        p_executor(attempt)
 
         # Clear the current attempt since we've completed processing it
         set_current_attempt(None)

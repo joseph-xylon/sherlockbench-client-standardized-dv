@@ -1,6 +1,7 @@
 import sys
 import time
 from datetime import datetime
+from functools import partial
 
 from google.genai import types
 from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, value_list_to_map
@@ -125,11 +126,12 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
 
         if tool_calls:
             printer.print("\n### SYSTEM: calling tool")
+            p_handle_tool_call = partial(handle_tool_call, postfn, printer, attempt_id, arg_spec, output_type)
             for part in completion.candidates[0].content.parts:
                 messages.append(part)
 
                 if part.function_call is not None:
-                    messages.append(handle_tool_call(postfn, printer, attempt_id, arg_spec, output_type, part.function_call))
+                    messages.append(p_handle_tool_call(part.function_call))
                     tool_call_counter += 1
 
         # if it didn't call the tool we can move on to verifications
@@ -141,7 +143,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
 
     raise MsgLimitException("Investigation loop overrun.")
 
-def investigate_verify(postfn, completionfn, config, attempt, run_id, cursor):
+def investigate_verify(postfn, completionfn, config, run_id, cursor, attempt):
     attempt_id, arg_spec, output_type, test_limit = destructure(attempt, "attempt-id", "arg-spec", "output-type", "test-limit")
 
     start_time = datetime.now()

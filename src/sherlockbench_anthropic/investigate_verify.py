@@ -1,8 +1,10 @@
 import json
 from datetime import datetime
+from functools import partial
 from pprint import pprint
 
 from anthropic.types import TextBlock, ToolUseBlock, ThinkingBlock, RedactedThinkingBlock
+
 from sherlockbench_client import destructure, AccumulatingPrinter, q, value_list_to_map
 
 from .prompts import make_initial_message
@@ -129,8 +131,9 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
                 "content": []
             }
 
+            p_handle_tool_call = partial(handle_tool_call, postfn, printer, attempt_id, arg_spec, output_type)
             for call in tool_calls:
-                tool_call_user_message["content"].append(handle_tool_call(postfn, printer, attempt_id, arg_spec, output_type, call))
+                tool_call_user_message["content"].append(p_handle_tool_call(call))
 
                 tool_call_counter += 1
 
@@ -159,7 +162,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
 
     raise MsgLimitException("Investigation loop overrun.")
 
-def investigate_verify(postfn, completionfn, config, attempt, run_id, cursor):
+def investigate_verify(postfn, completionfn, config, run_id, cursor, attempt):
     attempt_id, arg_spec, output_type, test_limit = destructure(attempt, "attempt-id", "arg-spec", "output-type", "test-limit")
 
     start_time = datetime.now()

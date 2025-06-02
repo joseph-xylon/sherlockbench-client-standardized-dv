@@ -1,7 +1,9 @@
 import json
+from functools import partial
+import re
+
 from openai import BadRequestError
 from pydantic import BaseModel
-import re
 
 def remove_think_blocks(text: str) -> str:
     """
@@ -118,8 +120,9 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
                              "content": remove_think_blocks(message),
                              "tool_calls": tool_calls})
 
+            p_handle_tool_call = partial(handle_tool_call, postfn, printer, attempt_id)
             for call in tool_calls:
-                messages.append(handle_tool_call(postfn, printer, attempt_id, call))
+                messages.append(p_handle_tool_call(call))
 
                 tool_call_counter += 1
 

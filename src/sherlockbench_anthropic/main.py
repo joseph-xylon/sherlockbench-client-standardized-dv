@@ -1,15 +1,14 @@
+from datetime import datetime
+from functools import partial
+
 import anthropic
+
 from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, print_progress_with_estimate
 from sherlockbench_client import run_with_error_handling, set_current_attempt
 
-from .prompts import make_initial_message
-from .investigate_verify import investigate_verify
 from .investigate_decide_verify import investigate_decide_verify
-from .verify import verify
-from functools import partial
-
-from datetime import datetime
-import argparse
+from .investigate_verify import investigate_verify
+from .prompts import make_initial_message
 
 def create_completion(client, model, **kwargs):
     """closure to pre-load the model"""
@@ -55,6 +54,8 @@ def run_benchmark(executor, config, db_conn, cursor, run_id, attempts, start_tim
                                   llmfn=completionfn,
                                   backoff_exceptions=(anthropic._exceptions.OverloadedError))
 
+    p_executor = partial(executor, postfn, completionfn, config, run_id, cursor)
+
     for i, attempt in enumerate(attempts, 1):
         print_progress_with_estimate(i, len(attempts), start_time)
 
@@ -62,7 +63,7 @@ def run_benchmark(executor, config, db_conn, cursor, run_id, attempts, start_tim
         set_current_attempt(attempt)
 
         # Process the attempt
-        executor(postfn, completionfn, config, attempt, run_id, cursor)
+        p_executor(attempt)
 
         # Clear the current attempt since we've completed processing it
         set_current_attempt(None)
