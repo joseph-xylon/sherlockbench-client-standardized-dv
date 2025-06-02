@@ -1,5 +1,5 @@
 from openai import OpenAI, LengthFinishReasonError
-from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q
+from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, print_progress_with_estimate
 from sherlockbench_client import run_with_error_handling, set_current_attempt
 
 from .prompts import make_initial_messages
@@ -65,7 +65,9 @@ def run_benchmark(config, db_conn, cursor, run_id, attempts, start_time):
                                   llmfn=completionfn,
                                   backoff_exceptions=())
 
-    for attempt in attempts:
+    for i, attempt in enumerate(attempts, 1):
+        print_progress_with_estimate(i, len(attempts), start_time)
+
         # Track the current attempt for error handling
         set_current_attempt(attempt)
 

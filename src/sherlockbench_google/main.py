@@ -4,7 +4,7 @@ from google.genai import types, errors
 from pprint import pprint
 from functools import partial
 
-from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q
+from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, print_progress_with_estimate
 from sherlockbench_client import run_with_error_handling, set_current_attempt
 
 from .prompts import system_message, make_initial_message
@@ -59,7 +59,9 @@ def run_benchmark(executor, config, db_conn, cursor, run_id, attempts, start_tim
                                   llmfn=completionfn,
                                   backoff_exceptions=(errors.ServerError))
 
-    for attempt in attempts:
+    for i, attempt in enumerate(attempts, 1):
+        print_progress_with_estimate(i, len(attempts), start_time)
+
         # Track the current attempt for error handling
         set_current_attempt(attempt)
 

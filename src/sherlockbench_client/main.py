@@ -8,6 +8,7 @@ import textwrap
 from requests import HTTPError
 from pydantic import BaseModel
 from typing import Callable
+from datetime import datetime
 
 
 def load_config(filepath):
@@ -194,3 +195,21 @@ def value_list_to_map(xs):
     """take a vector and return map with alphabetical keys"""
     keys = [chr(97 + i) for i in range(len(xs))]  # Generate keys: 'a', 'b', 'c', etc.
     return dict(zip(keys, xs))
+
+def print_progress_with_estimate(current_index, total_count, start_time):
+    """Print progress with estimated time remaining"""
+    current_time = datetime.now()
+    elapsed = (current_time - start_time).total_seconds()
+
+    if current_index > 1:
+        avg_time_per_item = elapsed / (current_index - 1)
+        remaining_items = total_count - current_index + 1
+        estimated_remaining = avg_time_per_item * remaining_items
+        est_hours = int(estimated_remaining // 3600)
+        est_minutes = int((estimated_remaining % 3600) // 60)
+        est_seconds = int(estimated_remaining % 60)
+        time_str = f" (est. {est_hours:02d}:{est_minutes:02d}:{est_seconds:02d} remaining)"
+    else:
+        time_str = ""
+
+    print(f"\n### SYSTEM: Starting attempt {current_index}/{total_count}{time_str}")
