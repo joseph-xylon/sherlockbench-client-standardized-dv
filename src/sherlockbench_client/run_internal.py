@@ -1,4 +1,5 @@
 import sys
+from datetime import datetime
 from pprint import pprint
 
 from .main import load_config, destructure, post
@@ -144,7 +145,8 @@ def save_run_failure(cursor, run_id, all_attempts, current_attempt, error_info):
         "error_message": error_info.get("error_message", "No message"),
         "traceback": error_info.get("traceback", "No traceback"),
         "current_attempt": current_attempt,
-        "all_attempts": all_attempts
+        "all_attempts": all_attempts,
+        "failure_datetime": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
 
     # Save the failure info to the database
