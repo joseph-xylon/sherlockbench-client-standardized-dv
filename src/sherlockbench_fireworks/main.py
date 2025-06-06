@@ -63,7 +63,7 @@ def run_benchmark(config, db_conn, cursor, run_id, attempts, start_time):
 
     completionfn = LLMRateLimiter(rate_limit_seconds=config['rate-limit'],
                                   llmfn=completionfn,
-                                  backoff_exceptions=())
+                                  backoff_exceptions=[])
 
     executor_p = partial(investigate_and_verify, postfn, completionfn, config, run_id, cursor)
 

@@ -142,11 +142,12 @@ def make_schema(output_type):
     return Prediction
 
 class LLMRateLimiter:
-    def __init__(self, rate_limit_seconds: int, llmfn: Callable, backoff_exceptions: tuple):
+    def __init__(self, rate_limit_seconds: int, llmfn: Callable, backoff_exceptions: list):
         """
         Initialize the RateLimiter.
 
         :param rate_limit_seconds: The initial number of seconds for the rate limit.
+        :param backoff_exceptions: List of tuples, each containing (exception_type, backoff_seconds).
         """
         self.llmfn = llmfn
         self.backoff_exceptions = backoff_exceptions
@@ -175,18 +176,29 @@ class LLMRateLimiter:
                 self.last_call_time = time.time()
                 return llmfn(*args, **kwargs)
 
-            except self.backoff_exceptions as e:
+            except Exception as e:
+                # Check if this exception matches any of our configured exception-backoff pairs
+                backoff_time = None
+                for exception_type, backoff_seconds in self.backoff_exceptions:
+                    if isinstance(e, exception_type):
+                        backoff_time = backoff_seconds
+                        break
+
+                # If no matching exception found, re-raise immediately
+                if backoff_time is None:
+                    raise
+
                 print()
                 print(e)
 
                 self.rate_limit_seconds += 1
-                print(f"\n### SYSTEM: backing off for 5 minutes and increasing rate limit to {self.rate_limit_seconds} seconds (retry {retry+1}/{max_retries})")
+                print(f"\n### SYSTEM: backing off for {backoff_time} seconds and increasing rate limit to {self.rate_limit_seconds} seconds (retry {retry+1}/{max_retries})")
 
                 # If this was the last retry, re-raise the exception
                 if retry == max_retries - 1:
                     raise
 
-                time.sleep(300)
+                time.sleep(backoff_time)
 
     def __call__(self, *args, **kwargs):
         return self.handle_call(self.llmfn, *args, **kwargs)
