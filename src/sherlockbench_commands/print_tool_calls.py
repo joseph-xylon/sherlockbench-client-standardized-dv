@@ -67,7 +67,7 @@ def main():
     # Get the attempt log
     log, function_name = get_attempt_log(cursor, attempt_id)
 
-    assert log
+    assert log, "Failed to get a log for this attempt id."
 
     print(f"=== Log for attempt '{attempt_id}' (function: {function_name}) ===\n")
 
