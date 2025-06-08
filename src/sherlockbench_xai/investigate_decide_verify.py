@@ -126,6 +126,9 @@ def decision(completionfn, messages, printer):
     printer.print("\n--- LLM ---")
     printer.indented_print(message)
 
+    messages.append({"role": "assistant",
+                            "content": message})
+
     return messages
 
 def investigate_decide_verify(postfn, completionfn, config, run_id, cursor, attempt):
