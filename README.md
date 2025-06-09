@@ -34,7 +34,7 @@ Create a postgresql database and user.
 
 Create a couple of config files:
 
-A `resources/config.yaml` should look like this (uncomment sections as appropriate):
+A `resources/config.yaml` looks like this:
 ```
 ---
 
@@ -44,60 +44,78 @@ base-url: "https://api.sherlockbench.com/api/"
 
 providers:
   openai:
-    rate-limit: 10
+    GPT-4o:
+      rate-limit: 10
+      model: "gpt-4o-2024-08-06"
+      #temperature: 0.5
 
-    model: "gpt-4.1-mini-2025-04-14"
-    #model: "o4-mini-2025-04-16"
-    #reasoning_effort: "medium"  # low, medium or high
-    
-    #temperature: 0.5
+    GPT-4.1:
+      rate-limit: 10
+      model: "gpt-4.1-2025-04-14"
 
-anthropic:
-    rate-limit: 10
+    o3:
+      rate-limit: 10
+      model: "o3-2025-04-16"
+      reasoning_effort: "medium"
 
-    model: "claude-3-5-haiku-20241022"
-    # special postfix +thinking enables Anthropic's "extended thinking"
-    #model: "claude-sonnet-4-20250514"
-    #model: "claude-sonnet-4-20250514+thinking"
-    #model: "claude-opus-4-20250514"
-    #model: "claude-opus-4-20250514+thinking"
-    
-    #temperature: 0.8
+    o4-mini:
+      rate-limit: 10
+      model: "o4-mini-2025-04-16"
+      reasoning_effort: "medium"
+
+  anthropic:
+    Haiku-3.5:
+      rate-limit: 20
+      model: "claude-3-5-haiku-20241022"
+      #temperature: 0.8
+
+    Sonnet-4:
+      rate-limit: 120
+      model: "claude-sonnet-4-20250514"
+
+    Opus 4:
+      rate-limit: 120
+      model: "claude-opus-4-20250514"
+
+    Sonnet-4+thinking:
+      rate-limit: 120
+      model: "claude-sonnet-4-20250514+thinking"
+
+    Opus-4+thinking:
+      rate-limit: 120
+      model: "claude-opus-4-20250514+thinking"
 
   google:
-    rate-limit: 10
+    Gemini-2.5-flash:
+      rate-limit: 20
+      model: "gemini-2.5-flash-preview-05-20"
+      #temperature: 0.0
 
-    #model: "gemini-2.0-flash"
-    model: "gemini-2.5-flash-preview-05-20"
-    #model: "gemini-2.5-pro-preview-05-06"
-    #temperature: 0.0
+    Gemini-2.5-pro:
+      rate-limit: 100
+      model: "gemini-2.5-pro-preview-05-06"
+      #temperature: 0.0
 
   xai:
-    rate-limit: 10
+    Grok-3:
+      rate-limit: 10
+      model: "grok-3"
 
-    model: "grok-3"
-    #model: "grok-3-mini"
-    #reasoning_effort: "high"  # high or low
-
-  fireworks:
-    rate-limit: 10
-
-    model: "accounts/fireworks/models/llama-v3p1-405b-instruct"
-    #temperature: 0.9
-    
-    # Qwen recommended settings: https://huggingface.co/Qwen/Qwen3-235B-A22B
-    model: "accounts/fireworks/models/qwen3-235b-a22b"
-    max_tokens: 32768
-    temperature: 0.6
-    extra_body:
-      top_p: 0.95
-      top_k: 20
-      min_p: 0
+    Grok-3-mini:
+      rate-limit: 10
+      model: "grok-3-mini"
+      reasoning_effort: "high"
 
   deepseek:
-    rate-limit: 30
+    v3:
+      rate-limit: 30
 
-    model: "deepseek-chat"
+      model: "deepseek-chat"
+
+    R1:
+      rate-limit: 30
+
+      model: "deepseek-reasoner"
 
 ```
 

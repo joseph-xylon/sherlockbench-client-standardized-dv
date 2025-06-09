@@ -45,7 +45,7 @@ def is_valid_uuid(uuid_string):
     uuid_pattern = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
     return bool(uuid_pattern.match(uuid_string))
 
-def start_run(provider, config_non_sensitive, config):
+def start_run(provider):
     """Various things to get the run started:
        - parse the args
        - establish db connection
@@ -55,19 +55,16 @@ def start_run(provider, config_non_sensitive, config):
     """
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Run SherlockBench with a required argument.")
-    parser.add_argument("arg", nargs="?", help="The id of an existing run, or the id of a problem-set.")
+    parser.add_argument("model_name", help="The name of the model to use for the run")
+    parser.add_argument("arg", help="The id of an existing run, or the id of a problem-set.")
     parser.add_argument("--attempts-per-problem", type=int, help="Number of attempts per problem")
     parser.add_argument("--resume", choices=["skip", "retry"], help="How to handle resuming from a failed run: 'skip' the failed attempt, or 'retry' it")
     parser.add_argument("--labels", nargs="+", help="Optional labels for this run (e.g., 'baseline', 'experiment', 'keeper')")
 
     args = parser.parse_args()
 
-    # Check if arg is missing and print usage
-    if args.arg is None:
-        parser.print_help()
-        print("\nTip: Use 'sherlockbench_list' command to see available problem sets.")
-        sys.exit(1)
-
+    # Read config
+    config_non_sensitive, config = load_provider_config(provider, args.model_name)
 
     # Connect to postgresql
     db_conn = psycopg2.connect(config["postgres-url"])
@@ -134,9 +131,6 @@ def run_with_error_handling(provider, main_function):
                        and return (postfn, total_call_count, config) for run completion.
     """
 
-    # Load configuration before acquiring lock so changes are picked up
-    config_non_sensitive, config = load_provider_config(provider)
-
     lock_path = f"/tmp/sherlockbench_client_{provider}.lock"
     lock = FileLock(lock_path)
 
@@ -149,7 +143,7 @@ def run_with_error_handling(provider, main_function):
     with lock:
         try:
             # Start the run
-            config, db_conn, cursor, run_id, attempts, start_time = start_run(provider, config_non_sensitive, config)
+            config, db_conn, cursor, run_id, attempts, start_time = start_run(provider)
 
             # Call the provider's main function, which should return info needed for completion
             postfn, total_call_count, _ = main_function(config, db_conn, cursor, run_id, attempts, start_time)
