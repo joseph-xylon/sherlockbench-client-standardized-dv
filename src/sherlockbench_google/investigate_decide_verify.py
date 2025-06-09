@@ -142,7 +142,7 @@ def investigate(config, postfn, completionfn, messages, printer, attempt_id, arg
         # if it didn't call the tool we can move on to verifications
         else:
             printer.print("\n### SYSTEM: The tool was used", tool_call_counter, "times.")
-            messages.append(save_message("assistant", message))
+            messages.append(save_message("model", message))
 
             return (tool_handler.format_call_history(), tool_call_counter)
 
@@ -163,7 +163,7 @@ def decision(completionfn, messages, printer):
     printer.print("\n--- LLM ---")
     printer.indented_print(message)
 
-    messages.append(save_message("assistant", message))
+    messages.append(save_message("model", message))
 
     return messages
 
