@@ -72,9 +72,11 @@ def run_benchmark(executor, config, db_conn, cursor, run_id, attempts, start_tim
     return postfn, completionfn.total_call_count, config
 
 def two_phase():
-    # Use the centralized error handling function
-    run_with_error_handling("anthropic", partial(run_benchmark, investigate_verify))
+    run_with_error_handling("anthropic", run_benchmark, investigate_verify)
 
 def three_phase():
-    # Use the centralized error handling function
-    run_with_error_handling("anthropic", partial(run_benchmark, investigate_decide_verify))
+    run_with_error_handling("anthropic", run_benchmark, investigate_decide_verify)
+
+def main():
+    run_with_error_handling("anthropic", run_benchmark, {"2-phase": investigate_verify,
+                                                         "3-phase": investigate_decide_verify})

@@ -46,6 +46,7 @@ providers:
   openai:
     GPT-4o:
       rate-limit: 10
+      default-run-mode: "3-phase"
       model: "gpt-4o-2024-08-06"
       #temperature: 0.5
 
