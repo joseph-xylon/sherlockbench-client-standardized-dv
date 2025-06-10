@@ -88,7 +88,7 @@ def start_run(provider):
     config["benchmark_version"] = benchmark_version
 
     # Return unified result regardless of path
-    return (config, db_conn, cursor, run_id, attempts, datetime.now())
+    return (config, model_name, db_conn, cursor, run_id, attempts, datetime.now())
 
 def complete_run(postfn, db_conn, cursor, run_id, start_time, total_call_count, config):
     run_time, score, percent, problem_names = destructure(postfn("complete-run", {}), "run-time", "score", "percent", "problem-names")
@@ -142,12 +142,12 @@ def run_with_error_handling(provider, main_function, ex_spec):
         print()
 
     with lock:
+        # Start the run
+        config, model_name, db_conn, cursor, run_id, attempts, start_time = start_run(provider)
+
+        executor = pick_executor(config, ex_spec)
+
         try:
-            # Start the run
-            config, db_conn, cursor, run_id, attempts, start_time = start_run(provider)
-
-            executor = pick_executor(config, ex_spec)
-
             # Call the provider's main function, which should return info needed for completion
             postfn, total_call_count, _ = main_function(executor, config, db_conn, cursor, run_id, attempts, start_time)
 
@@ -180,10 +180,10 @@ def run_with_error_handling(provider, main_function, ex_spec):
                     db_conn.commit()
 
                     # Provide resumption instructions to the user
-                    script_name = sys.argv[0]
+                    script_name = sys.argv[0].rsplit('/', 1)[-1]
                     print("\n### SYSTEM INFO: Run failed. To resume this run, use one of the following:")
-                    print(f"  {script_name} {run_id} --resume=skip   # Skip the failed attempt")
-                    print(f"  {script_name} {run_id} --resume=retry  # Retry the failed attempt")
+                    print(f"  {script_name} {model_name} {run_id} --resume=skip   # Skip the failed attempt")
+                    print(f"  {script_name} {model_name} {run_id} --resume=retry  # Retry the failed attempt")
 
                 except Exception as save_error:
                     print(f"\n### SYSTEM ERROR: Failed to save error information: {save_error}")
