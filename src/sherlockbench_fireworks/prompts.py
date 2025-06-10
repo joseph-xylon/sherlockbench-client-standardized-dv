@@ -1,6 +1,6 @@
 def make_initial_messages(test_limit):
     return [
-        {"role": "developer", "content":
+        {"role": "system", "content":
 """You are a competent and alert chatbot.
 
 You are provided with a mystery function which you will \"interrogate\" to try to determine what it does. Use the provided tool to do this.
@@ -14,6 +14,20 @@ n.b. it is your job to pick inputs for the mystery function. Do not ask the user
 I would like you to test my function using the provided tool until you think you know what it does, then tell me.
 
 You may test this function up-to {test_limit} times."""}
+    ]
+
+def make_decision_messages(examples_text):
+    return [
+        {"role": "system", "content":
+         """You are a competent and alert chatbot. You will help to investigate a mystery function."""},
+        {"role": "user", "content":
+         f"""I have a mystery function and I want you to figure out what it does.
+
+Here are some examples of the function's input and output:
+
+{examples_text}
+
+Based on these examples, please determine what the function does and summarise."""}
     ]
 
 def make_verification_message(f_input):

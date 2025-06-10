@@ -2,18 +2,20 @@ import json
 from openai import LengthFinishReasonError
 from pydantic import BaseModel
 from .prompts import make_verification_message
-from sherlockbench_client import destructure, make_schema, value_list_to_map
+from sherlockbench_client import destructure, make_schema
 
-def verify(config, postfn, completionfn, messages, printer, attempt_id):
+def verify(config, postfn, completionfn, messages, printer, attempt_id, v_formatter):
     # for each verification
     while (v_data := postfn("next-verification", {"attempt-id": attempt_id})):
         verification = v_data["next-verification"]
         output_type = v_data["output-type"]
 
-        printer.print("\n### SYSTEM: inputs:")
-        printer.indented_print(verification)
+        verification_formatted = v_formatter(verification)
 
-        vmessages = messages + [make_verification_message(value_list_to_map(verification))]
+        printer.print("\n### SYSTEM: inputs:")
+        printer.indented_print(verification_formatted)
+
+        vmessages = messages + [make_verification_message(verification_formatted)]
 
         try:
             completion = completionfn(messages=vmessages,
@@ -35,8 +37,8 @@ def verify(config, postfn, completionfn, messages, printer, attempt_id):
             print("Failed to decode JSON")
             print("Error:", e)
 
-            # well it failed so we return False
-            return False
+            # well it failed so we break
+            break
 
         printer.print("\n--- LLM ---")
         printer.indented_print(thoughts, "\n")
