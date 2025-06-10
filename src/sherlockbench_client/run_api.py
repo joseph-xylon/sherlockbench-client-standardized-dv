@@ -88,7 +88,7 @@ def start_run(provider):
     config["benchmark_version"] = benchmark_version
 
     # Return unified result regardless of path
-    return (config, model_name, db_conn, cursor, run_id, attempts, datetime.now())
+    return (config, args.model_name, db_conn, cursor, run_id, attempts, datetime.now())
 
 def complete_run(postfn, db_conn, cursor, run_id, start_time, total_call_count, config):
     run_time, score, percent, problem_names = destructure(postfn("complete-run", {}), "run-time", "score", "percent", "problem-names")
