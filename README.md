@@ -47,69 +47,95 @@ providers:
     GPT-4o:
       rate-limit: 10
       default-run-mode: "3-phase"
+
       model: "gpt-4o-2024-08-06"
       #temperature: 0.5
 
     GPT-4.1:
       rate-limit: 10
+      default-run-mode: "3-phase"
+
       model: "gpt-4.1-2025-04-14"
 
     o3:
       rate-limit: 10
+      default-run-mode: "2-phase"
+
       model: "o3-2025-04-16"
       reasoning_effort: "medium"
 
     o4-mini:
       rate-limit: 10
+      default-run-mode: "2-phase"
+
       model: "o4-mini-2025-04-16"
       reasoning_effort: "medium"
 
   anthropic:
     Haiku-3.5:
       rate-limit: 20
+      default-run-mode: "2-phase"
+
       model: "claude-3-5-haiku-20241022"
       #temperature: 0.8
 
     Sonnet-4:
       rate-limit: 120
+      default-run-mode: "2-phase"
+
       model: "claude-sonnet-4-20250514"
 
     Opus 4:
       rate-limit: 120
+      default-run-mode: "2-phase"
+
       model: "claude-opus-4-20250514"
 
     Sonnet-4+thinking:
       rate-limit: 120
+      default-run-mode: "2-phase"
+
       model: "claude-sonnet-4-20250514+thinking"
 
     Opus-4+thinking:
       rate-limit: 120
+      default-run-mode: "2-phase"
+
       model: "claude-opus-4-20250514+thinking"
 
   google:
     Gemini-2.5-flash:
       rate-limit: 20
+      default-run-mode: "3-phase"
+
       model: "gemini-2.5-flash-preview-05-20"
       #temperature: 0.0
 
     Gemini-2.5-pro:
       rate-limit: 100
+      default-run-mode: "3-phase"
+
       model: "gemini-2.5-pro-preview-05-06"
       #temperature: 0.0
 
   xai:
     Grok-3:
       rate-limit: 10
+      default-run-mode: "2-phase"
+
       model: "grok-3"
 
     Grok-3-mini:
       rate-limit: 10
+      default-run-mode: "2-phase"
+
       model: "grok-3-mini"
       reasoning_effort: "high"
 
   deepseek:
     v3:
       rate-limit: 30
+      default-run-mode: "3-phase"
 
       model: "deepseek-chat"
 
