@@ -167,6 +167,11 @@ Running it should be essentially:
 - run `alembic upgrade head` to create the database tables
 - type the name of the provider entry-point to run the benchmark (see setup.cfg)
 
+Here is an example of how to run it:
+```
+sherlockbench_anthropic Haiku-3.5 sherlockbench.sample-problems/easy3
+```
+
 ## Database Analysis
 There are two tables in the database;
 - runs stores general information about the test run and it's results
