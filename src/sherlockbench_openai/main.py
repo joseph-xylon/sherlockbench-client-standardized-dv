@@ -2,7 +2,7 @@ from datetime import datetime
 from functools import partial
 from pprint import pprint
 
-from openai import OpenAI, APITimeoutError
+from openai import OpenAI, APITimeoutError, InternalServerError
 
 from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, print_progress_with_estimate
 from sherlockbench_client import run_with_error_handling, set_current_attempt
@@ -38,7 +38,8 @@ def run_benchmark(executor, config, db_conn, cursor, run_id, attempts, start_tim
 
     completionfn = LLMRateLimiter(rate_limit_seconds=config['rate-limit'],
                                   llmfn=completionfn,
-                                  backoff_exceptions=[(APITimeoutError, 300)])
+                                  backoff_exceptions=[(APITimeoutError, 300),
+                                                      (InternalServerError, 60)])
 
     executor_p = partial(executor, postfn, completionfn, config, run_id, cursor)
 
