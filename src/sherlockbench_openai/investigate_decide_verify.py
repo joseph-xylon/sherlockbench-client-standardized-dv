@@ -4,7 +4,6 @@ from functools import partial
 
 from pydantic import BaseModel
 from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q
-from psycopg2.errors import SyntaxError
 
 from .investigate_verify import list_to_map, normalize_args, format_tool_call, format_inputs
 from .prompts import make_initial_messages, make_decision_messages
@@ -150,12 +149,6 @@ def investigate_decide_verify(postfn, completionfn, config, run_id, cursor, atte
     verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id, partial(format_inputs, arg_spec))
 
     time_taken = (datetime.now() - start_time).total_seconds()
-    try:
-        q.add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count, printer, completionfn, start_api_calls, attempt_id)
-
-    except SyntaxError as e:
-        # most likely it doesn't like the log. so we give fresh printer
-        printer = AccumulatingPrinter()
-        q.add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count, printer, completionfn, start_api_calls, attempt_id)
+    q.add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count, printer, completionfn, start_api_calls, attempt_id)
 
     return verification_result
