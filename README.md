@@ -63,6 +63,7 @@ providers:
 
       model: "o3-2025-04-16"
       reasoning_effort: "medium"
+      service_tier: "auto"
 
     o4-mini:
       rate-limit: 10
@@ -70,6 +71,7 @@ providers:
 
       model: "o4-mini-2025-04-16"
       reasoning_effort: "medium"
+      service_tier: "auto"
 
   anthropic:
     Haiku-3.5:

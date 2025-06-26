@@ -23,7 +23,8 @@ def run_benchmark(executor, config, db_conn, cursor, run_id, attempts, start_tim
     Run the OpenAI benchmark with the given parameters.
     This function is called by run_with_error_handling.
     """
-    client = OpenAI(api_key=config['api-keys']['openai'])
+    client = OpenAI(api_key=config['api-keys']['openai'],
+                    timeout=900.0)
 
     postfn = lambda *args: post(config["base-url"], run_id, *args)
 
@@ -33,6 +34,9 @@ def run_benchmark(executor, config, db_conn, cursor, run_id, attempts, start_tim
 
         if "reasoning_effort" in config:
             kwargs["reasoning_effort"] = config['reasoning_effort']
+
+        if "service_tier" in config:
+            kwargs["service_tier"] = config['service_tier']
 
         return create_completion(client, model=config['model'], **kwargs)
 
