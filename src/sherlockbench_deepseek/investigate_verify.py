@@ -53,7 +53,18 @@ def format_tool_call(args, arg_spec, output_type, result):
     return f"{format_inputs(arg_spec, clean_args)} → {oput}"
 
 def handle_tool_call(postfn, printer, attempt_id, arg_spec, output_type, call):
-    arguments = json.loads(call.function.arguments)
+    try:
+        arguments = json.loads(call.function.arguments)
+
+    except json.JSONDecodeError as e:
+        function_call_result_message = {
+            "role": "tool",
+            "content": "invalid json when calling tool",
+            "tool_call_id": call.id
+        }
+
+        return function_call_result_message
+
     args_norm = normalize_args(arguments)
 
     fnoutput = postfn("test-function", {"attempt-id": attempt_id,

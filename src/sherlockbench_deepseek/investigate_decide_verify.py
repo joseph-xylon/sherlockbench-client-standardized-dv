@@ -19,7 +19,18 @@ class ToolCallHandler:
         self.call_history = []
 
     def handle_tool_call(self, call):
-        arguments = json.loads(call.function.arguments)
+        try:
+            arguments = json.loads(call.function.arguments)
+
+        except json.JSONDecodeError as e:
+            function_call_result_message = {
+                "role": "tool",
+                "content": "invalid json when calling tool",
+                "tool_call_id": call.id
+            }
+
+            return function_call_result_message
+
         args_norm = normalize_args(arguments)
 
         fnoutput, fnerror = destructure(self.postfn("test-function", {"attempt-id": self.attempt_id,
