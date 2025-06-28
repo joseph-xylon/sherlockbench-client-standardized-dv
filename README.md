@@ -171,7 +171,7 @@ Running it should be essentially:
 
 Here is an example of how to run it:
 ```
-sherlockbench_anthropic Haiku-3.5 sherlockbench.sample-problems/easy3
+sbench_anthropic Haiku-3.5 sherlockbench.sample-problems/easy3
 ```
 
 ## Database Analysis
