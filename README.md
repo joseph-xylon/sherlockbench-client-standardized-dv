@@ -16,7 +16,7 @@ If you want to run this benchmark yourself, you will need:
 - An account and API key for whichever LLM provider you want to use
 - A computer to install Python and PostgreSQL on. Postgres is how it stores analytics for each run
 
-General instructions follow. Alternatively you may watch this video for Ubuntu instructions: [Installing SherlockBench Client](https://youtu.be/qNIXQTtuFYs).
+General instructions follow. Alternatively you may watch this video for Ubuntu instructions: [Installing SherlockBench Client](https://youtu.be/8CdX0VheL5M).
 
 Checkout this code.
 
@@ -171,10 +171,28 @@ Running it should be essentially:
 
 Here is an example of how to run it:
 ```
+# list available problem-sets
+sbench_list
+
+# run the benchmark
 sbench_anthropic Haiku-3.5 sherlockbench.sample-problems/easy3
+```
+
+If you want a breadown per problem, you will want to run multiple attempts per problem:
+```
+sbench_anthropic Haiku-3.5 sherlockbench.sample-problems/easy3 --attempts-per-problem 10
+
+# summarize the attempts
+summarize_attempts --run-ids b92c2ca4-6126-412e-a703-9d3991e99b77
 ```
 
 ## Database Analysis
 There are two tables in the database;
 - runs stores general information about the test run and it's results
 - attempts stores the logs for the individual attempts and some metadata
+
+There are also some views for convenience. These just show the most commonly used columns.
+```
+select * from runs_view;
+select * from attempts_view;
+```
