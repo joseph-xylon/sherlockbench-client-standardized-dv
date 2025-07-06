@@ -7,7 +7,7 @@ from anthropic.types import TextBlock, ToolUseBlock, ThinkingBlock, RedactedThin
 from sherlockbench_client import destructure, AccumulatingPrinter, q
 
 from .investigate_verify import list_to_map, normalize_args, format_tool_call, format_inputs, NoToolException, MsgLimitException, parse_completion
-from .prompts import make_initial_message, make_decision_messages
+from .prompts import make_initial_message, make_decision_messages, make_3p_verification_message
 from .verify import verify
 
 class ToolCallHandler:
@@ -169,7 +169,7 @@ def investigate_decide_verify(postfn, completionfn, config, run_id, cursor, atte
     messages = decision(completionfn, messages, printer)
 
     printer.print("\n### SYSTEM: verifying function with args", arg_spec)
-    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id, partial(format_inputs, arg_spec))
+    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id, partial(format_inputs, arg_spec), make_3p_verification_message)
 
     time_taken = (datetime.now() - start_time).total_seconds()
     q.add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count, printer, completionfn, start_api_calls, attempt_id)

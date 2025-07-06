@@ -6,7 +6,7 @@ from functools import partial
 from google.genai import types
 from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, value_list_to_map
 
-from .prompts import system_message, make_initial_message
+from .prompts import system_message, make_initial_message, make_2p_verification_message
 from .utility import save_message
 from .verify import verify
 
@@ -158,7 +158,7 @@ def investigate_verify(postfn, completionfn, config, run_id, cursor, attempt):
     messages, tool_call_count = investigate(config, postfn, completionfn, messages, printer, attempt_id, arg_spec, output_type, test_limit)
 
     printer.print("\n### SYSTEM: verifying function with args", arg_spec)
-    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id, value_list_to_map)
+    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id, value_list_to_map, make_2p_verification_message)
 
     time_taken = (datetime.now() - start_time).total_seconds()
     q.add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count, printer, completionfn, start_api_calls, attempt_id)

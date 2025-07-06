@@ -30,7 +30,7 @@ Here are some examples of the function's input and output:
 Based on these examples, please determine what the function does and summarise."""}
     ]
 
-def make_verification_message(f_input):
+def make_2p_verification_message(f_input):
     formatted = f_input
 
     return {"role": "user", "content":
@@ -39,6 +39,17 @@ f"""To test your theory, please tell me what is the expected output from the fun
 {formatted}
 
 You no-longer have access to the tool because I am testing if you have got it right.
+
+Please respond in JSON with two keys: \"thoughts\" and \"expected_output\".
+expected_output should contain the output you expect from the function."""}
+
+def make_3p_verification_message(f_input):
+    formatted = f_input
+
+    return {"role": "user", "content":
+f"""To test your theory, please tell me what is the expected output from the function with this input:
+
+{formatted}
 
 Please respond in JSON with two keys: \"thoughts\" and \"expected_output\".
 expected_output should contain the output you expect from the function."""}

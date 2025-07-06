@@ -5,7 +5,7 @@ from functools import partial
 from pydantic import BaseModel
 from sherlockbench_client import destructure, post, AccumulatingPrinter, LLMRateLimiter, q, value_list_to_map
 
-from .prompts import make_initial_messages
+from .prompts import make_initial_messages, make_2p_verification_message
 from .verify import verify
 
 def list_to_map(input_list):
@@ -140,7 +140,7 @@ def investigate_verify(postfn, completionfn, config, run_id, cursor, attempt):
                                             printer, attempt_id, arg_spec, output_type, test_limit)
 
     printer.print("\n### SYSTEM: verifying function with args", arg_spec)
-    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id, value_list_to_map)
+    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id, value_list_to_map, make_2p_verification_message)
 
     time_taken = (datetime.now() - start_time).total_seconds()
     q.add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count, printer, completionfn, start_api_calls, attempt_id)
