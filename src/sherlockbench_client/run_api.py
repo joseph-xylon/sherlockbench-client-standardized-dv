@@ -69,6 +69,7 @@ def start_run(provider):
 
     # Connect to postgresql
     db_conn = psycopg2.connect(config["postgres-url"])
+    db_conn.autocommit = True
     cursor = db_conn.cursor()
 
     # Check if this is an existing run ID
