@@ -9,7 +9,7 @@ from requests import HTTPError
 from pydantic import BaseModel
 from typing import Callable
 from datetime import datetime
-from openai import OpenAI, APITimeoutError, InternalServerError
+from openai import OpenAI, APITimeoutError, InternalServerError, BadRequestError
 
 def load_config(filepath):
     with open(filepath, "r") as file:
@@ -262,4 +262,5 @@ def make_completionfn():
     return LLMRateLimiter(rate_limit_seconds=config['rate-limit'],
                           llmfn=completionfn,
                           backoff_exceptions=[(APITimeoutError, 300),
-                                              (InternalServerError, 60)])
+                                              (InternalServerError, 60),
+                                              (BadRequestError, 60)])
