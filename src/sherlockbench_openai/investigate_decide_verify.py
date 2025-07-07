@@ -146,7 +146,7 @@ def investigate_decide_verify(postfn, completionfn, config, run_id, cursor, atte
     messages = decision(completionfn, messages, printer)
 
     printer.print("\n### SYSTEM: verifying function with args", arg_spec)
-    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id, partial(format_inputs, arg_spec, make_3p_verification_message))
+    verification_result = verify(config, postfn, completionfn, messages, printer, attempt_id, partial(format_inputs, arg_spec), make_3p_verification_message)
 
     time_taken = (datetime.now() - start_time).total_seconds()
     q.add_attempt(cursor, run_id, verification_result, time_taken, tool_call_count, printer, completionfn, start_api_calls, attempt_id)
