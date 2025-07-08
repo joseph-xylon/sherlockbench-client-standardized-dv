@@ -5,4 +5,4 @@ and verification.
 o4-mini is hardcoded in `src/sherlockbench_client/main.py`.
 
 There are no special requirements to run this branch, as-long as o4-mini is
-configured in your `config.yaml`.
+configured in your `config.yaml`, with `reasoning_effort` set to "medium".
